@@ -42,3 +42,16 @@ object InsertOverwritePar {
   session.sql("alter table table1 drop partition ( a = 'value' ,  b = 'value1')")//删除一个分区
   session.sql("show partition table1")
 }
+//2023/01/09 PM16
+//=================================简直笑死================================================
+//可以直接使用hive sql的语法进行操作，支持重复调用
+
+    val insertData = {
+      """
+        |INSERT OVERWRITE TABLE
+        |dmit.dm_trustworthiness_container_t_privacy_segw_interconnection_uat partition (indicator_id,period_date)
+        |select
+        |*
+        |from selectData
+        |""".stripMargin
+    }
