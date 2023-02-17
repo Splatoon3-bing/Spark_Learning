@@ -1,0 +1,284 @@
+package com.huawei.devsecops.Common
+
+import com.huawei.devsecops.utils.DateTimeUtil
+import org.apache.log4j.Logger
+import org.apache.spark.sql.{DataFrame, Row, SaveMode, SparkSession}
+import org.apache.spark.storage.StorageLevel
+
+import java.util.UUID
+
+/**
+ * 功能描述
+ * 资产地图,统计各个库的性能数据写入dwrit.dwr_physical_entity_assetmodel_t1
+ *
+ * @author mWX1199216
+ * @since 2023/2/15
+ * @version
+ */
+object SpPhysicalAssetModel {
+  private val LOGGER = Logger.getLogger(this.getClass)
+  private val APP_NAME = "SpPhysicalAssetModel"
+  private val TABLE_NAME = "dwiit.dwi_pg_all_performance_tables_all"
+  def main(args: Array[String]): Unit = {
+    val session = SparkSession.builder().appName(APP_NAME).enableHiveSupport()
+      .config("spark.serializer", "org.apache.spark.serializer.KryoSerializer")
+      .config("spark.sql.adaptive.coalescePartitions.enabled","true")
+      .config("spark.sql.adaptive.enabled", "true")
+      .config("spark.sql.shuffle.partitions", "400")
+      .getOrCreate()
+    session.sql("set hive.exec.dynamic.partition=true")
+    session.sql("set hive.exec.dynamic.partition.mode=nonstrict")
+    //获取当天从五个库中抽取来的性能数据
+    val Oringin = List("PG01","PG02","PG03","PG04","EADM")
+    val Views = List("pg_proc","pg_views","pg_matviews")
+    val Current_date = DateTimeUtil.getNowDateTime("yyyymmdd")
+    for ( x <- Oringin) {
+      for( y <- Views) {
+        //从分区表拿出来指定数据建立视图
+        session.table(TABLE_NAME).where(
+          s"""
+             |pg_database = '$x'
+             |and pg_table = '$y'
+             |and period_id = current_date()
+             |""".stripMargin).createOrReplaceTempView("dwi_"+ s"${y}"+"_"+s"${x}")
+      }
+    }
+    session.sql(
+      """
+        |SELECT
+        |	    'PG01'AS `DATABASE`
+        |	  ,prosrc
+        |	 FROM dwi_pg_proc_PG01
+        |	 UNION ALL
+        |	 SELECT
+        |		'PG02' as `DATABASE`
+        |			,prosrc
+        |	 FROM dwi_pg_proc_PG02
+        |	  UNION ALL
+        |	 SELECT
+        |		'PG03' as `DATABASE`
+        |			,prosrc
+        |	 FROM dwi_pg_proc_PG03
+        |	 UNION ALL
+        |	 SELECT
+        |		'PG04' as `DATABASE`
+        |			,prosrc
+        |	 FROM dwi_pg_proc_PG04
+        |	 UNION ALL
+        |	 SELECT
+        |		'EADM' as `DATABASE`
+        |			,prosrc
+        |	 FROM dwi_pg_proc_EADM
+        |""".stripMargin).createOrReplaceTempView("FuncationsReference")
+    session.sql(
+      """
+        |SELECT
+        |	    'PG01'AS `DATABASE`
+        |	  ,definition
+        |	 FROM dwi_pg_matviews_PG01
+        |	 UNION ALL
+        |	 SELECT
+        |		'PG02' as `DATABASE`
+        |			,definition
+        |	 FROM dwi_pg_matviews_PG02
+        |	  UNION ALL
+        |	 SELECT
+        |		'PG03' as `DATABASE`
+        |			,definition
+        |	 FROM dwi_pg_matviews_PG03
+        |	 UNION ALL
+        |	 SELECT
+        |		'PG04' as `DATABASE`
+        |			,definition
+        |	 FROM dwi_pg_matviews_PG04
+        |	 UNION ALL
+        |	 SELECT
+        |		'EADM' as `DATABASE`
+        |			,definition
+        |	 FROM dwi_pg_matviews_EADM
+        |""".stripMargin).createOrReplaceTempView("MatviewsReference")
+    session.sql(
+      """
+        |SELECT
+        |	    'PG01'AS `DATABASE`
+        |	  ,definition
+        |	 FROM dwi_pg_views_PG01
+        |	 UNION ALL
+        |	 SELECT
+        |		'PG02' as `DATABASE`
+        |			,definition
+        |	 FROM dwi_pg_views_PG02
+        |	  UNION ALL
+        |	 SELECT
+        |		'PG03' as `DATABASE`
+        |			,definition
+        |	 FROM dwi_pg_views_PG03
+        |	 UNION ALL
+        |	 SELECT
+        |		'PG04' as `DATABASE`
+        |			,definition
+        |	 FROM dwi_pg_views_PG04
+        |	 UNION ALL
+        |	 SELECT
+        |		'EADM' as `DATABASE`
+        |			,definition
+        |	 FROM dwi_pg_views_EADM
+        |""".stripMargin).createOrReplaceTempView("ViewsReference")
+    //子任务1
+    val frame = session.sql(
+      """
+        |select
+        | physicalentity_schema
+        |,physicalentity_name
+        |,physicalentity_remarks
+        |,table_size
+        |,table_num
+        |,period_date
+        |,now.physicalentity_code
+        |,physicalentity_type
+        |,now.`database`
+        |,physicalentity_create_date
+        |,seven_table_num_flag
+        |,thirty_table_num_flag
+        |,halfyear_table_num_flag
+        |,seven_table_size_flag
+        |,thirty_table_size_flag
+        |,halfyear_table_size_flag
+        |,module_status_priority
+        |,data_type
+        |,table_type
+        |,data_update_frequency
+        |,app_module_status
+        |,module_status_time
+        |,dw_create_date
+        |,dw_last_modify_date
+        |,del_flag
+        |,tenant_id
+        |,case when up.function_reference = 'Y' then up.function_reference else 'N' end as   function_reference
+        |,view_reference
+        |,mv_view_reference
+        |,partition_table_name
+        |,master_table_name
+        |from dwrit.dwr_physical_entity_assetmodel_t1 now
+        |left join
+        |(select
+        |a.`database`,
+        |a.physicalentity_code,
+        |'Y' as function_reference
+        |from dwrit.dwr_physical_entity_assetmodel_t1 a
+        |left join FuncationsReference b ON a.`database` = b.`DATABASE`
+        |WHERE LOWER ( b.prosrc ) like  '%'|| a.PHYSICALENTITY_NAME ||'%'
+        |) up
+        |on now.`database` = up.`database`
+        |and now.physicalentity_code = up.physicalentity_code
+        |""".stripMargin)//
+    //给是否被函数调用打标签
+    frame.persist(StorageLevel.MEMORY_AND_DISK_SER).createOrReplaceTempView("FuncationTagging")
+    frame.show(50,false)
+    frame.describe().show()
+    //给是否被视图使用打标签
+    val frame1 = session.sql(
+      """
+        |select
+        | physicalentity_schema
+        |,physicalentity_name
+        |,physicalentity_remarks
+        |,table_size
+        |,table_num
+        |,period_date
+        |,now.physicalentity_code
+        |,physicalentity_type
+        |,now.`database`
+        |,physicalentity_create_date
+        |,seven_table_num_flag
+        |,thirty_table_num_flag
+        |,halfyear_table_num_flag
+        |,seven_table_size_flag
+        |,thirty_table_size_flag
+        |,halfyear_table_size_flag
+        |,module_status_priority
+        |,data_type
+        |,table_type
+        |,data_update_frequency
+        |,app_module_status
+        |,module_status_time
+        |,dw_create_date
+        |,dw_last_modify_date
+        |,del_flag
+        |,tenant_id
+        |,function_reference
+        |,case when up.view_reference = 'Y' then up.view_reference else 'N' end as view_reference
+        |,mv_view_reference
+        |,partition_table_name
+        |,master_table_name
+        |from FuncationTagging now
+        |left join
+        |(select
+        |a.`database`,
+        |a.physicalentity_code,
+        |'Y' as view_reference
+        |from dwrit.dwr_physical_entity_assetmodel_t1 a
+        |left join ViewsReference b ON a.`database` = b.`DATABASE`
+        |WHERE LOWER ( b.definition ) like  '%'|| a.PHYSICALENTITY_NAME ||'%'
+        |) up
+        |on now.`database` = up.`database`
+        |and now.physicalentity_code = up.physicalentity_code
+        |""".stripMargin)
+    frame1.persist(StorageLevel.MEMORY_AND_DISK_SER).createOrReplaceTempView("ViewTagging")
+    frame1.show(50, false)
+    frame1.describe().show()
+    //给是否被物化视图使用打标签
+    val frame2 = session.sql(
+      """
+        |select
+        | physicalentity_schema
+        |,physicalentity_name
+        |,physicalentity_remarks
+        |,table_size
+        |,table_num
+        |,period_date
+        |,now.physicalentity_code
+        |,physicalentity_type
+        |,now.`database`
+        |,physicalentity_create_date
+        |,seven_table_num_flag
+        |,thirty_table_num_flag
+        |,halfyear_table_num_flag
+        |,seven_table_size_flag
+        |,thirty_table_size_flag
+        |,halfyear_table_size_flag
+        |,module_status_priority
+        |,data_type
+        |,table_type
+        |,data_update_frequency
+        |,app_module_status
+        |,module_status_time
+        |,dw_create_date
+        |,dw_last_modify_date
+        |,del_flag
+        |,tenant_id
+        |,function_reference
+        |, view_reference
+        |,case when up.mv_view_reference = 'Y' then up.mv_view_reference else 'N' end as mv_view_reference
+        |,partition_table_name
+        |,master_table_name
+        |from ViewTagging now
+        |left join
+        |(select
+        |a.`database`,
+        |a.physicalentity_code,
+        |'Y' as mv_view_reference
+        |from dwrit.dwr_physical_entity_assetmodel_t1 a
+        |left join MatviewsReference b ON a.`database` = b.`DATABASE`
+        |WHERE LOWER ( b.definition ) like  '%'|| a.PHYSICALENTITY_NAME ||'%'
+        |) up
+        |on now.`database` = up.`database`
+        |and now.physicalentity_code = up.physicalentity_code
+        |""".stripMargin)
+    frame2.persist(StorageLevel.MEMORY_AND_DISK_SER).createOrReplaceTempView("MaterialViewTagging")
+    frame2.show(50, false)
+    frame2.describe().show()
+
+    session.stop()
+  }
+}
