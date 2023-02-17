@@ -1,0 +1,418 @@
+ set hive.exec.dynamic.partition=true;                --是否支持动态分区操作
+ set hive.exec.dynamic.partition.mode=nonstrict;      --是否非严格模式
+ set hive.exec.max.dynamic.partitions.pernode=100000;  --总共允许创建的动态分区的节点的最大数量
+ set hive.exec.max.dynamic.partitions=100000;         --总共允许创建的动态分区的最大数量
+ set hive.exec.max.created.files=150000; ;--总共允许创建的最大文件数量
+ set hive.mapred.local.mem =4096;
+ --=======================================================
+ create temporary table dwr_physical_entity_assetmodel_t1_tmp as 
+ select * from dwrit.dwr_physical_entity_assetmodel_t1
+WHERE  period_date > date_format(CURRENT_DATE - interval 6 month,'yyyyMMdd' )
+		AND period_date <  date_format(CURRENT_DATE,'yyyyMMdd');
+
+insert overwrite table dwrit.dwr_physical_entity_assetmodel_t1
+ partition (
+		  pg_database,     
+		  period_id   
+        )
+select * from dwr_physical_entity_assetmodel_t1_tmp;
+--============================================================================
+create temporary table dwi_pg_tables_101 as 
+select * from dwiit.dwi_pg_all_performance_tables_all where pg_database = '${Database}' and pg_table = 'pg_tables' and period_id = date_format(CURRENT_DATE,'yyyy-MM-dd') ;
+		
+create temporary table dwi_pg_inherits_101 as 
+select * from dwiit.dwi_pg_all_performance_tables_all where pg_database = '${Database}' and pg_table = 'pg_inherits' and period_id = date_format(CURRENT_DATE,'yyyy-MM-dd') ;
+
+create temporary table dwi_pg_class_101 as 
+select * from dwiit.dwi_pg_all_performance_tables_all where pg_database = '${Database}' and pg_table = 'pg_class' and period_id = date_format(CURRENT_DATE,'yyyy-MM-dd');
+
+create temporary table dwi_pg_namespace_101 as 
+select * from dwiit.dwi_pg_all_performance_tables_all where pg_database = '${Database}' and pg_table = 'pg_namespace' and period_id = date_format(CURRENT_DATE,'yyyy-MM-dd');
+
+create temporary table dwi_pg_description_101 as 
+select * from dwiit.dwi_pg_all_performance_tables_all where pg_database = '${Database}' and pg_table = 'pg_description' and period_id = date_format(CURRENT_DATE,'yyyy-MM-dd');
+
+create temporary table dwi_pg_stat_all_tables_101 as 
+select * from dwiit.dwi_pg_all_performance_tables_all where pg_database = '${Database}' and pg_table = 'pg_stat_all_tables' and period_id = date_format(CURRENT_DATE,'yyyy-MM-dd');
+
+create temporary table dwi_pg_matviews_101 as 
+select * from dwiit.dwi_pg_all_performance_tables_all where pg_database = '${Database}' and pg_table = 'pg_matviews' and period_id = date_format(CURRENT_DATE,'yyyy-MM-dd');
+
+--===============================================================================================================
+insert overwrite table dwiit.dwi_physical_entity_assetmodel_upf_t
+       partition (
+		  pg_database,     
+		  period_id   
+        )
+SELECT
+        t.pg_database AS `DATABASE`  --'PG' AS DATABASE
+       ,t.schemaname
+       ,t.tablename
+       ,schemaname || '.' || tablename as full_table
+       ,case
+          when rel_1.parent_table is not null and rel_2.parent_table is not null then
+            'SUB_PARTITION_TABLE'
+          when rel_1.parent_table is not null and rel_2.parent_table is null then
+            'PARTITION_TABLE'
+          else
+            'TABLE'
+        end as physicalentity_type
+       ,case
+          when rel_1.parent_table is not null and rel_2.parent_table is not null then  --子分区表,取第一个的parent表作为partition表
+            rel_1.parent_table
+          when rel_1.parent_table is not null and rel_2.parent_table is null then      --分区表,放自己
+            schemaname || '.' || tablename
+          else
+            NULL                                                                       --mater表，没有所属的partition表
+        end as PARTITION_TABLE_NAME  --子分区表对应的分区表
+       ,case
+          when rel_1.parent_table is not null and rel_2.parent_table is not null then   --子分区表,取最后的parent表作为mater表
+            rel_2.parent_table
+          when rel_1.parent_table is not null and rel_2.parent_table is null then       --子分区表,取第一个的parent表作为mater表
+            rel_1.parent_table
+          else
+            schemaname || '.' || tablename                                              --mater表，放自己
+        end as MASTER_TABLE_NAME  --分区表对应的主表
+		,'${Database}' AS pg_database
+		,CURRENT_DATE as period_id
+  FROM dwi_pg_tables_101 t
+  left join (SELECT nmsp_parent.nspname || '.' || parent.relname AS parent_table
+                    ,nmsp_child.nspname || '.' || child.relname AS child_table
+                 FROM dwi_pg_inherits_101 ptt
+                 JOIN dwi_pg_class_101 parent
+                   ON ptt.inhparent = parent.oid
+                 JOIN dwi_pg_class_101 child
+                   ON ptt.inhrelid = child.oid
+                 JOIN dwi_pg_namespace_101 nmsp_parent
+                   ON nmsp_parent.oid = parent.relnamespace
+                 JOIN dwi_pg_namespace_101 nmsp_child
+                   ON nmsp_child.oid = child.relnamespace
+              ) rel_1
+    on schemaname || '.' || tablename = rel_1.child_table
+   left join (SELECT nmsp_parent.nspname || '.' || parent.relname AS parent_table
+                    ,nmsp_child.nspname || '.' || child.relname AS child_table
+                 FROM dwi_pg_inherits_101 ptt
+                 JOIN dwi_pg_class_101 parent
+                   ON ptt.inhparent = parent.oid
+                 JOIN dwi_pg_class_101 child
+                   ON ptt.inhrelid = child.oid
+                 JOIN dwi_pg_namespace_101 nmsp_parent
+                   ON nmsp_parent.oid = parent.relnamespace
+                 JOIN dwi_pg_namespace_101 nmsp_child
+                   ON nmsp_child.oid = child.relnamespace
+									             ) rel_2
+    on rel_1.parent_table = rel_2.child_table;
+--===================================================================
+insert overwrite table dwiit.dwi_physical_entity_assetmodel_ssd_t
+partition (
+		  pg_database,     
+		  period_id   
+        )
+SELECT
+ C.`DATABASE` AS `DATABASE`
+,C.oid AS oid
+,description--备注信息
+,C.relname
+,'${Database}' AS pg_database
+,CURRENT_DATE as period_id
+FROM
+	( SELECT
+		  s.pg_database AS `DATABASE`
+		  ,s.oid
+		  ,s.relname
+		 FROM
+			dwi_pg_class_101 s
+	)C --求物理实体ID
+LEFT JOIN (
+	   SELECT
+     a.pg_database AS `DATABASE`
+		  ,a.objoid
+		  ,a.objsubid
+		  ,a.description
+		 FROM dwi_pg_description_101 a
+	   ) pd_tab --pd_tab功能主要是获取物理实体备注信息，但是此表只能获取数据库信息和物理实体ID、该表物理实体ID有重复现象无法与主表tr进行关联，故与C表进行left join关联，从而获取物理实体的备注信息
+		 ON pd_tab.objoid = C.oid
+		  AND pd_tab.`DATABASE`=c.`DATABASE`
+	  AND pd_tab.objsubid = 0;
+--==================================================================
+insert overwrite table dwiit.dwi_physical_entity_assetmodel_temp_uu_t
+partition (
+		  pg_database,     
+		  period_id   
+        )
+select
+	              CASE WHEN b.sevent > 1 AND sevent_nub > 0 THEN 'Y'
+				             WHEN b.sevent <= 1 AND sevent_nub > 0 THEN 'N'
+					         WHEN sevent_nub = 0 OR sevent_nub IS NULL THEN 'N/A'
+						     END AS SEVEN_TABLE_NUM_FLAG  ---近7天表平均记录数是否发生变化标识
+               ,CASE WHEN b.thrith > 1 AND thrith_nub > 0 THEN 'Y'
+							       WHEN b.thrith <= 1 AND thrith_nub > 0 THEN 'N'
+							       WHEN thrith_nub = 0 OR thrith_nub IS NULL THEN'N/A'
+							       END AS THIRTY_TABLE_NUM_FLAG---近30天表平均记录数是否发生变化标识
+               ,CASE WHEN b.mon > 1 AND mon_nub > 0 THEN 'Y'
+							       WHEN b.mon <= 1 AND mon_nub > 0 THEN 'N'
+						         WHEN mon_nub = 0 OR mon_nub IS NULL THEN 'N/A'
+							       END AS HALFYEAR_TABLE_NUM_FLAG --近半年表平均记录数是否发生变化标识
+               ,CASE WHEN b.sevent > 1 AND sevent_nub > 0 THEN 'Y'
+							       WHEN b.sevent <= 1 AND sevent_nub > 0 THEN 'N'
+							       WHEN sevent_nub = 0 OR sevent_nub IS NULL THEN'N/A'
+							       END AS SEVEN_TABLE_SIZE_FLAG---近7天表平均大小是否发生变化标识
+               ,CASE WHEN b.thrith > 1  AND thrith_nub > 0 THEN 'Y'
+							       WHEN b.thrith <= 1 AND thrith_nub > 0 THEN 'N'
+							       WHEN thrith_nub = 0 OR thrith_nub IS NULL THEN 'N/A'
+							       END AS THIRTY_TABLE_SIZE_FLAG--近30天表平均大小是否发生变化标识
+               ,CASE WHEN mon > 1 AND mon_nub > 0 THEN 'Y'
+							       WHEN mon <= 1 AND mon_nub > 0 THEN 'N'
+							       WHEN mon_nub = 0 OR mon_nub IS NULL THEN'N/A'
+							       END AS HALFYEAR_TABLE_SIZE_FLAG---近半年表平均大小是否发生变化标识
+							 ,b.PHYSICALENTITY_CODE as PHYSICALENTITY_CODE
+							 ,'${Database}' AS pg_database
+		                     ,CURRENT_DATE as period_id
+					from (
+							SELECT
+							     T.PHYSICALENTITY_CODE as PHYSICALENTITY_CODE
+								  ,COUNT ( DISTINCT CASE WHEN period_date  >= current_timestamp() - INTERVAL 7 day THEN table_num END ) AS sevent
+								  ,COUNT ( DISTINCT CASE WHEN period_date  >= current_timestamp() - INTERVAL 30 day THEN table_num END ) AS thrith
+								  ,COUNT ( DISTINCT CASE WHEN period_date  >= current_timestamp() - INTERVAL 6 month THEN table_num END ) AS mon
+								  ,SUM ( CASE WHEN period_date  >= current_timestamp() - INTERVAL 7 day THEN table_num  END ) AS sevent_nub
+								  ,SUM ( CASE WHEN period_date  >= current_timestamp() - INTERVAL 30 day THEN table_num END ) AS thrith_nub
+								  ,SUM ( CASE WHEN period_date  >= current_timestamp() - INTERVAL 6 month THEN table_num END ) AS mon_nub
+							  FROM dwrit.dwr_physical_entity_assetmodel_t T
+							  where T.`DATABASE` = '${Database}'
+							  GROUP BY T.PHYSICALENTITY_CODE) b;
+--==================================================================================================
+insert overwrite table dwiit.dwi_physical_entity_assetmodel_tr_t
+partition (
+		  pg_database,     
+		  period_id   
+        )
+(SELECT
+		   T.PHYSICALENTITY_TYPE AS PHYSICALENTITY_TYPE
+      ,substring(T.tablename,length(T.tablename)-2,3) as sub--截取物理实体后三位
+			,T.`DATABASE` AS `DATABASE`
+		  ,CASE WHEN  T.TABLENAME LIKE 'rt_%' THEN '实时' else '离线' END AS DATA_UPDATE_FREQUENCY--数据更新频率
+			,t2.relid AS relid--物理实体ID
+			,'N' AS APP_MODULE_STATUS--是否已日落
+			,T.PHYSICALENTITY_CODE--物理实体编码
+			,T.schemaname schemaname --schemaname
+			,T.tablename tablename--表名
+			,t.SIZE as SIZE
+			,t2.n_live_tup rowcount --表行数
+			,'${Database}' AS pg_database
+		    ,CURRENT_DATE as period_id
+		FROM
+			(
+			SELECT
+	      'TABLE' AS PHYSICALENTITY_TYPE --物理实体类型
+				,'${Database}'AS `DATABASE`
+				,schemaname
+				,tablename--表名
+				,concat_ws ( '/', LOWER('${Database}'), schemaname, tablename ) AS PHYSICALENTITY_CODE --${Database}物理实体编码
+				,TABLE_SIZE AS SIZE--表大小
+			   FROM
+				     dwi_pg_tables_101
+			) T--获取${Database}表的基本信息（表的schemaname、表名、物理实体编码）
+		     LEFT JOIN
+		      (
+			    SELECT
+			    	 relid--物理实体ID
+			    	,relname--表名
+			    	,schemaname --schemaname
+			    	,n_live_tup --表行数
+			    	,concat_ws ( '/', LOWER('${Database}'), schemaname, relname ) AS PHYSICALENTITY_CODE --${Database}物理实体编码
+			     FROM
+			    		dwi_pg_stat_all_tables_101
+			   ) t2--获取${Database}/pg02表的基本信息（物理实体ID、表名、schemaname、表行数）
+			 ON T.PHYSICALENTITY_CODE = t2.PHYSICALENTITY_CODE
+			 WHERE 1 = 1
+			 AND T.schemaname IN ( 'dwitapp', 'dwiit', 'dmit', 'dwrit', 'dwitbak' ))
+			 	UNION ALL--物化视图
+			(SELECT
+			  'MV' AS PHYSICALENTITY_TYPE --物理实体类型
+			  ,substring( T.matviewname,length(T.matviewname)-2,3) as sub --物理实体字段截取最后三位
+				,T.`DATABASE` AS `DATABASE`
+				,'离线'AS DATA_UPDATE_FREQUENCY --数据更新频率
+				,t2.relid AS relid
+				,'N' AS APP_MODULE_STATUS
+				,T.PHYSICALENTITY_CODE
+				,T.schemaname schemaname
+				,T.matviewname tablename
+				,t.SIZE as SIZE
+				,t2.n_live_tup rowcount
+				,'${Database}' AS pg_database
+		        ,CURRENT_DATE as period_id
+			FROM
+				(
+				SELECT
+				  '${Database}'AS `DATABASE`
+					,schemaname
+					,matviewname
+					,concat_ws ( '/', LOWER('${Database}'), schemaname, matviewname ) AS PHYSICALENTITY_CODE
+					,TABLE_SIZE AS SIZE
+				FROM
+					dwi_pg_matviews_101
+				) T--获取${Database}/pg02物化视图的基本信息（表的schemaname、表名、物理实体编码）
+			LEFT JOIN (
+				SELECT
+					relid
+					,n_live_tup
+					,relname
+					,schemaname
+					,CONCAT_WS ( '/', LOWER('${Database}'), schemaname, relname ) AS PHYSICALENTITY_CODE
+				FROM
+					dwi_pg_stat_all_tables_101
+			           ) t2 --获取${Database}/pg02物化视图的基本信息（物理实体ID、表名、schemaname、表行数）
+				   ON T.PHYSICALENTITY_CODE = t2.PHYSICALENTITY_CODE
+			        WHERE 1 = 1
+					AND T.schemaname IN ( 'dwitapp', 'dwiit', 'dmit', 'dwrit', 'dwitbak' ));
+--======================================================================================================
+insert overwrite table dwiit.dwi_physical_entity_assetmodel_poo_t
+partition (
+		  pg_database,     
+		  period_id   
+        )
+SELECT
+           TR.PHYSICALENTITY_CODE          --物体实体编码
+		 ,UPF.PARTITION_TABLE_NAME        --子分区表对应的分区表
+			,UPF.MASTER_TABLE_NAME			--分区表对应的主表
+     ,CASE WHEN TR.PHYSICALENTITY_TYPE ='MV' THEN'过程数据'
+           WHEN TR.TABLENAME LIKE'%_bak%' AND TR.PHYSICALENTITY_TYPE <>'MV' THEN'备份数据'
+            WHEN TR.SCHEMANAME IN ('dwrit','dmit','dwitapp') AND TR.TABLENAME LIKE'%_f' AND TR.PHYSICALENTITY_TYPE <>'MV' THEN'结果数据'
+            WHEN TR.SCHEMANAME IN ('dwrit','dmit','dwitapp') AND TR.TABLENAME LIKE'%_t' AND TR.PHYSICALENTITY_TYPE <>'MV' THEN'结果数据'
+            WHEN TR.SCHEMANAME IN ('dwrit','dmit','dwitapp') AND TR.TABLENAME LIKE'%_d' AND TR.PHYSICALENTITY_TYPE <>'MV' THEN'结果数据'
+            WHEN TR.TABLENAME LIKE'%_his' AND TR.PHYSICALENTITY_TYPE <>'MV' THEN'归档数据'
+            WHEN TR.SCHEMANAME='dwiit'AND dff.ssid is not null AND TR.PHYSICALENTITY_TYPE <>'MV' THEN'结果数据'
+            WHEN TR.SCHEMANAME='dwiit'AND dff.ssid is null AND TR.PHYSICALENTITY_TYPE <>'MV' THEN'过程数据'
+            ELSE'过程数据'
+            END AS DATA_TYPE                                                                                 --数据类别
+     ,CASE WHEN TR.PHYSICALENTITY_TYPE='MV' THEN'物化视图'
+            WHEN TR.TABLENAME LIKE'%_bak%' AND TR.PHYSICALENTITY_TYPE <>'MV' THEN'备份表'
+            WHEN TR.SCHEMANAME IN ('dwrit','dmit','dwitapp') AND TR.TABLENAME LIKE'%_f' AND TR.PHYSICALENTITY_TYPE <>'MV'  THEN'事实表'
+            WHEN TR.SCHEMANAME IN ('dwrit','dmit','dwitapp') AND TR.TABLENAME LIKE'%_t' AND TR.PHYSICALENTITY_TYPE <>'MV'   THEN'宽表'
+            WHEN TR.SCHEMANAME IN ('dwrit','dmit','dwitapp') AND TR.TABLENAME LIKE'%_d' AND TR.PHYSICALENTITY_TYPE <>'MV'   THEN'维表'
+            WHEN TR.SCHEMANAME='dwiit'AND dff.ssid is not null AND TR.PHYSICALENTITY_TYPE <>'MV' THEN'贴源表'
+            WHEN TR.SCHEMANAME='dwiit'AND dff.ssid is null AND TR.PHYSICALENTITY_TYPE <>'MV'    THEN'临时表'
+            ELSE'临时表'
+            END AS TABLE_TYPE                                            --表类别
+     ,TR.DATA_UPDATE_FREQUENCY AS DATA_UPDATE_FREQUENCY                  --数据更新频率
+     ,TR.`DATABASE`                                                        --数据库名
+     ,date_format(CURRENT_DATE,'yyyyMMdd')  AS period_date                             --统计期
+     ,UPF.PHYSICALENTITY_TYPE AS PHYSICALENTITY_TYPE                      --物体实体类型
+	   ,tr.SIZE  AS TABLE_SIZE                                 --表大小
+	   ,tr.rowcount   AS TABLE_NUM                              --表行数
+	   ,tr.schemaname AS PHYSICALENTITY_SCHEMA                    --schemaname
+	   ,tr.tablename AS PHYSICALENTITY_NAME                      --实体名
+	   ,SSD.description AS PHYSICALENTITY_REMARKS    --物体实体备注
+     ,current_timestamp( ) AS DW_CREATE_DATE
+	   ,current_timestamp( ) AS DW_LAST_MODIFY_DATE
+	   ,'N' AS DEL_FLAG
+	   ,1 AS TENANT_ID
+	   , null   AS FUNCTION_REFERENCE            --是否被存储过程核函数引用
+	   , null   AS VIEW_REFERENCE                --是否被视图引用
+	   , null   AS MV_VIEW_REFERENCE             --是否被视图引用
+	   ,uu.SEVEN_TABLE_NUM_FLAG
+     ,uu.THIRTY_TABLE_NUM_FLAG                                           --近30天表平均记录数是否发生变化标识
+	   ,uu.HALFYEAR_TABLE_NUM_FLAG                                          --近半年表平均记录数是否发生变化标识
+     ,uu.SEVEN_TABLE_SIZE_FLAG                                                                                   --近7天表平均大小是否发生变化标识
+     ,uu.THIRTY_TABLE_SIZE_FLAG                                                                                   --近30天表平均大小是否发生变化标识
+     ,uu.HALFYEAR_TABLE_SIZE_FLAG                                                                              --近半年表平均大小是否发生变化标识
+,CASE WHEN uot.PHYSICALENTITY_CODE IS NULL  THEN date_format(current_date - INTERVAL 1 day,'yyyyMMdd')
+	        ELSE  uot.PHYSICALENTITY_CREATE_DATE
+	 	      END AS PHYSICALENTITY_CREATE_DATE                                                                      --物理实体创建时间
+	  ,tr.APP_MODULE_STATUS                                                                                         --是否已日落
+	  , NULL AS MODULE_STATUS_TIME                                                                                  --日落时间
+	  ,CASE WHEN tr.APP_MODULE_STATUS = 'N' AND uu.HALFYEAR_TABLE_NUM_FLAG = 'N'
+									                        AND uu.HALFYEAR_TABLE_SIZE_FLAG = 'N' THEN '最优先安排日落'
+		      WHEN tr.APP_MODULE_STATUS = 'N' AND uu.THIRTY_TABLE_NUM_FLAG = 'N'
+										                      AND uu.THIRTY_TABLE_SIZE_FLAG = 'N'   THEN '次优先安排日落'
+		      WHEN tr.APP_MODULE_STATUS = 'N' AND uu.SEVEN_TABLE_NUM_FLAG = 'N'
+										                      AND uu.SEVEN_TABLE_SIZE_FLAG = 'N'    THEN '末优先级安排日落'
+		      ELSE'不涉及安排日落'
+		      END AS MODULE_STATUS_PRIORITY   --日落优先级
+	  ,'${Database}' AS pg_database
+	  ,current_date as period_id
+  FROM dwiit.dwi_physical_entity_assetmodel_tr_t tr  ---tr 表的作用是将u01与u02表通过union all 的方式关联起来，将${Database}中的表与视图关联起来
+		LEFT JOIN  dwiit.dwi_physical_entity_assetmodel_ssd_t SSD --物理实体的备注信息
+			        ON tr.tablename = SSD.relname AND tr.relid = SSD.oid and tr.`DATABASE`=SSD.`DATABASE`='${Database}'
+			 left join dwiit.dwi_physical_entity_assetmodel_upf_t UPF ON TR.`DATABASE`=UPF.`DATABASE`
+        AND TR.schemaname=UPF.schemaname
+       AND TR.tablename=UPF.tablename
+     	LEFT JOIN dwiit.dwi_physical_entity_assetmodel_temp_uu_t  uu ON tr.PHYSICALENTITY_CODE = uu.PHYSICALENTITY_CODE
+	LEFT JOIN dwrit.dwr_physical_entity_assetmodel_t uot
+		          ON tr.PHYSICALENTITY_CODE = uot.PHYSICALENTITY_CODE
+				     AND uot.period_date = date_format(current_date - INTERVAL 1 day,'yyyyMMdd') 
+		LEFT JOIN dwiit.dev_data_source_ssid_t  dff on dff.ssid=tr.sub; 
+-----==========================================================================
+INSERT OVERWRITE TABLE dwrit.dwr_physical_entity_assetmodel_t1
+       partition (
+		  pg_database,     
+		  period_id   
+        )
+SELECT 
+			 POO.PHYSICALENTITY_SCHEMA       --物理实体Schema
+			 ,POO.PHYSICALENTITY_NAME	      --物理实体名称  --POO.PHYSICALENTITY_CODE         --物理实体编码
+			 ,POO.PHYSICALENTITY_REMARKS      --物理实体备注 --POO.PARTITION_TABLE_NAME        --子分区表对应的分区表
+		     ,POO.TABLE_SIZE                  --表大小 --POO.MASTER_TABLE_NAME			  		--分区表对应的主表	
+             ,POO.TABLE_NUM                   --表记录数评估(行) --POO.DATA_TYPE                   --数据类别
+             ,POO.PERIOD_DATE                 --统计时间 --POO.TABLE_TYPE                  --表类别
+			 ,POO.PHYSICALENTITY_CODE         --物理实体编码
+			 ,CASE WHEN POO.PHYSICALENTITY_TYPE IS NOT NULL THEN POO.PHYSICALENTITY_TYPE ELSE 'MV' END AS PHYSICALENTITY_TYPE        --物理实体类型
+             ,POO.`DATABASE`                    --所在数据库--POO.DATA_UPDATE_FREQUENCY       --数据更新频率
+             ,POO.physicalentity_create_date  ---'物理实体创建时间',
+             ,POO.seven_table_num_flag        ---'近7天表平均记录数是否发生变化标识',
+             ,POO.thirty_table_num_flag       ---'近30天表平均记录数是否发生变化标识',
+             ,POO.halfyear_table_num_flag     ---'近半年表平均记录数是否发生变化标识',
+             ,POO.seven_table_size_flag       ---'近7天表平均大小是否发生变化标识',
+             ,POO.thirty_table_size_flag      ---'近30天表平均大小是否发生变化标识',
+             ,POO.halfyear_table_size_flag    ---'近半年表平均大小是否发生变化标识',
+             ,POO.module_status_priority      ---'日落优先级',
+             ,POO.data_type                   ---'数据类别',
+             ,POO.table_type                  ---'表类别',
+             ,POO.data_update_frequency       ---'数据更新频率',
+             ,POO.app_module_status           ---'是否已日落',
+             ,POO.module_status_time          ---'日落时间',
+             ,POO.dw_create_date              ---
+             ,POO.dw_last_modify_date         ---
+             ,POO.del_flag                    ---
+             ,POO.tenant_id                   ---
+             ,POO.function_reference          ---'是否被存储过程引用',
+             ,POO.view_reference              ---'是否被视图引用',
+             ,POO.mv_view_reference           ---'是否被物化视图引用',
+             ,POO.partition_table_name        ---
+             ,POO.master_table_name           ---
+			 ,'${Database}' AS pg_database --数据来源库
+			 ,current_date as period_id --数据写入时间
+ FROM dwiit.dwi_physical_entity_assetmodel_poo_t POO
+ where POO.pg_database = '${Database}' and POO.period_id = current_date
+ group by     POO.PHYSICALENTITY_CODE         --物理实体编码
+			 ,POO.PARTITION_TABLE_NAME        --子分区表对应的分区表
+		     ,POO.MASTER_TABLE_NAME			  		--分区表对应的主表	
+             ,POO.DATA_TYPE                   --数据类别
+             ,POO.TABLE_TYPE                  --表类别
+             ,POO.DATA_UPDATE_FREQUENCY       --数据更新频率
+             ,POO.`DATABASE`                    --所在数据库
+             ,POO.PERIOD_DATE                 --统计时间
+             ,CASE WHEN POO.PHYSICALENTITY_TYPE IS NOT NULL THEN POO.PHYSICALENTITY_TYPE ELSE 'MV' END         --物理实体类型
+             ,POO.TABLE_SIZE                  --表大小
+             ,POO.TABLE_NUM                   --表记录数评估(行)
+             ,POO.PHYSICALENTITY_SCHEMA       --物理实体Schema
+             ,POO.PHYSICALENTITY_NAME	      --物理实体名称
+             ,POO.PHYSICALENTITY_REMARKS      --物理实体备注
+             ,POO.DW_CREATE_DATE              --DW记录创建时间
+             ,POO.DW_LAST_MODIFY_DATE         --DW记录最后更新时间
+             ,POO.DEL_FLAG                    --逻辑删除标志
+             ,POO.TENANT_ID                   --租户ID
+             ,POO.FUNCTION_REFERENCE          --是否被存储过程核函数引用
+             ,POO.VIEW_REFERENCE              --是否被视图引用
+             ,POO.MV_VIEW_REFERENCE           --是否被物化视图引用
+             ,POO.SEVEN_TABLE_NUM_FLAG        --近7天表平均记录数是否发生变化标识
+             ,POO.THIRTY_TABLE_NUM_FLAG       --近30天表平均记录数是否发生变化标识
+             ,POO.HALFYEAR_TABLE_NUM_FLAG     --近半年表平均记录数是否发生变化标识
+             ,POO.SEVEN_TABLE_SIZE_FLAG       --近7天表大小是否发生变化标识
+             ,POO.THIRTY_TABLE_SIZE_FLAG      --近30天表大小是否发生变化标识
+             ,POO.HALFYEAR_TABLE_SIZE_FLAG    --近半年表平均大小是否发生变化标识
+             ,POO.PHYSICALENTITY_CREATE_DATE  --物理实体创建时间
+             ,POO.APP_MODULE_STATUS           --是否已日落
+             ,POO.MODULE_STATUS_TIME          --日落时间
+             ,POO.MODULE_STATUS_PRIORITY      --日落优先级
+ -----------------------------------------------------------------------------------------------------------------
