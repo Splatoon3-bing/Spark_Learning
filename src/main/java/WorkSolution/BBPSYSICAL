@@ -1,0 +1,970 @@
+SELECT t.*
+      ,case
+              when t."totLastyearBudgetTotalAmount" = 0 then
+                null
+              else
+                (t."totBudgetTotalAmount"-t."totLastyearBudgetTotalAmount")*1.0/t."totLastyearBudgetTotalAmount"
+            end as "totBudgetTotalYoyRate" --预算分配同比(总计)
+            
+      ,case
+              when t."totLastyearAccExecuteTotalAmount" = 0 then
+                null
+              else
+                (t."totAccExecuteTotalAmount"-t."totLastyearAccExecuteTotalAmount")*1.0/t."totLastyearAccExecuteTotalAmount"
+            end as "totAccExecuteTotalYoyRate" --预算执行同比(总计)
+      ,case
+              when t."totLastyearAccExecuteEmpAmount" = 0 then
+                null
+              else
+                (t."totAccExecuteEmpAmount"-t."totLastyearAccExecuteEmpAmount")*1.0/t."totLastyearAccExecuteEmpAmount"
+            end as "totAccExecuteEmpYoyRate" --自有预算执行同比(总计)
+      ,case
+              when t."totLastyearAccExecuteOthAmount" = 0 then
+                null
+              else
+                (t."totAccExecuteOthAmount"-t."totLastyearAccExecuteOthAmount")*1.0/t."totLastyearAccExecuteOthAmount"
+            end as "totAccExecuteOthYoyRate" --外包预算执行同比(总计)
+      ,case
+              when t."totLastyearAccExecuteOdAmount" = 0 then
+                null
+              else
+                (t."totAccExecuteOdAmount"-t."totLastyearAccExecuteOdAmount")*1.0/t."totLastyearAccExecuteOdAmount"
+            end as "totAccExecuteOdYoyRate" --OD预算执行同比(总计)
+            
+           ,case
+              when t."totAvailableTotalAmount" = 0 then
+                null
+              else
+                t."totAccExecuteTotalAmount"*1.0/t."totAvailableTotalAmount"
+            end as "totAccExecuteRate" --预算执行率(总计)
+            
+           ,case
+              when t."totAvailableEmpAmount" = 0 then
+                null
+              else
+                t."totAccExecuteEmpAmount"*1.0/t."totAvailableEmpAmount"
+            end as "totAccEmpExecuteRate" --自有预算执行率(总计)
+            
+           ,case
+              when t."totAvailableOthAmount" = 0 then
+                null
+              else
+                t."totAccExecuteOthAmount"*1.0/t."totAvailableOthAmount"
+            end as "totAccOthExecuteRate" --外包预算执行率(总计)
+            
+           ,case
+              when t."totAvailableOdAmount" = 0 then
+                null
+              else
+                t."totAccExecuteOdAmount"*1.0/t."totAvailableOdAmount"
+            end as "totAccOdExecuteRate" --OD预算执行率(总计)
+           
+           /*,case when t."empRates" = 0 and t."othRates" = 0 and t."odRates" = 0 then null else
+            case when t."empRates" = 0 then 0 else t."totRemBudgetEmpAmount"*1.0/t."empRates" end +
+            case when t."othRates" = 0 then 0 else t."totRemBudgetOthAmount"*1.0/t."othRates" end +
+            case when t."odRates" = 0 then 0 else  t."totRemBudgetOdAmount"*1.0/t."odRates" end end as "totBackCalculationEmpNum" --剩余预算反算人力(总计)
+           ,case when t."empRates" = 0 then null else t."totRemBudgetEmpAmount"*1.0/t."empRates" end as "totBackCalculationEmpEmpNum" --自有剩余预算反算人力(总计)
+           ,case when t."othRates" = 0 then null else t."totRemBudgetOthAmount"*1.0/t."othRates" end as "totBackCalculationEmpOthNum" --外包剩余预算反算人力(总计)
+           ,case when t."odRates" = 0 then null else  t."totRemBudgetOdAmount"*1.0/t."odRates" end as "totBackCalculationEmpOdNum" --OD剩余预算反算人力(总计)*/
+           
+           /*,sum(t."personsInServiceNum")over() as "totPersonsInServiceNum" --在职人数(总计)
+           ,sum(t."personsInServiceEmpNum")over() as "totPersonsInServiceEmpNum" --自有在职人数(总计)
+           ,sum(t."personsInServiceOthNum")over() as "totPersonsInServiceOthNum" --合作在职人数(总计)
+           ,sum(t."personsInServiceOdNum")over() as "totPersonsInServiceOdNum" --od在职人数(总计)*/
+           
+           /*,sum(t."workforceVarianceNum")over() as "totWorkforceVarianceNum" --人力差异(总计)
+           ,sum(t."workforceVarianceEmpNum")over() as "totWorkforceVarianceEmpNum" --自有人力差异(总计)
+           ,sum(t."workforceVarianceOthNum")over() as "totWorkforceVarianceOthNum" --合作人力差异(总计)
+           ,sum(t."workforceVarianceOdNum")over() as "totWorkforceVarianceOdNum" --od人力差异(总计)*/
+  FROM (
+     SELECT t.*
+           ,sum(t."budgetTotalAmount")over() as "totBudgetTotalAmount" --预算分配总额(总计)
+           ,sum(t."budgetEmpAmount")over() as "totBudgetEmpAmount" --自有预算分配总额(总计)
+           ,sum(t."budgetOthAmount")over() as "totBudgetOthAmount" --合作预算分配总额(总计)
+           ,sum(t."budgetOdAmount")over() as "totBudgetOdAmount" --od预算分配总额(总计)
+           
+           ,sum(t."availableTotalAmount")over() as "totAvailableTotalAmount" --可用预算总额(总计)
+           ,sum(t."availableEmpAmount")over() as "totAvailableEmpAmount" --自有可用预算总额(总计)
+           ,sum(t."availableOthAmount")over() as "totAvailableOthAmount" --合作可用预算总额(总计)
+           ,sum(t."availableOdAmount")over() as "totAvailableOdAmount" --od可用预算总额(总计)
+      
+           ,sum(t."accExecuteTotalAmount")over() as "totAccExecuteTotalAmount" --预算执行总额(总计)
+           ,sum(t."accExecuteEmpAmount")over() as "totAccExecuteEmpAmount" --自有预算执行总额(总计)
+           ,sum(t."accExecuteOthAmount")over() as "totAccExecuteOthAmount" --合作预算执行总额(总计)
+           ,sum(t."accExecuteOdAmount")over() as "totAccExecuteOdAmount" --od预算执行总额(总计)
+           
+           ,sum(t."availableTotalAmount")over() - sum(t."accExecuteTotalAmount")over() as "totRemBudgetTotalAmount" --剩余预算(总计)
+           ,sum(t."availableEmpAmount")over() - sum(t."accExecuteEmpAmount")over() as "totRemBudgetEmpAmount" --自有剩余预算(总计)
+           ,sum(t."availableOthAmount")over() - sum(t."accExecuteOthAmount")over() as "totRemBudgetOthAmount" --外包剩余预算(总计)
+           ,sum(t."availableOdAmount")over() - sum(t."accExecuteOdAmount")over() as "totRemBudgetOdAmount" --OD剩余预算(总计)
+      
+           ,sum(t."lastyearBudgetTotalAmount")over() as "totLastyearBudgetTotalAmount" --去年预算分配总额(总计)
+           --,sum(t."lastyearBudgetEmpAmount")over() as "totLastyearBudgetEmpAmount" --去年自有预算分配总额(总计)
+           --,sum(t."lastyearBudgetOthAmount")over() as "totLastyearBudgetOthAmount" --去年外包预算分配总额(总计)
+           --,sum(t."lastyearBudgetOdAmount")over() as "totLastyearBudgetOdAmount" --去年OD预算分配总额(总计)
+           
+           ,sum(t."lastyearAccExecuteTotalAmount")over() as "totLastyearAccExecuteTotalAmount" --去年预算执行总额(总计)
+           ,sum(t."lastyearAccExecuteEmpAmount")over() as "totLastyearAccExecuteEmpAmount" --去年同期自有年累计执行总额(总计)
+           ,sum(t."lastyearAccExecuteOthAmount")over() as "totLastyearAccExecuteOthAmount" --去年同期外包年累计执行总额(总计)
+           ,sum(t."lastyearAccExecuteOdAmount")over() as "totLastyearAccExecuteOdAmount" --去年同期OD年累计执行总额(总计)
+           
+           ,d.c_101013138 + d.c_101013139 + d.c_101013140 as "personsInServiceNum" --在职人数
+           ,d.c_101013138 as "personsInServiceEmpNum" --自有在职人数
+           ,d.c_101013140 as "personsInServiceOthNum" --外包在职人数
+           ,d.c_101013139 as "personsInServiceOdNum" --OD在职人数
+           
+           ,t."backCalculationEmpNum" - d.c_101013138 - d.c_101013139 - d.c_101013140 as "workforceVarianceNum" --人力差异
+           ,t."backCalculationEmpEmpNum" - d.c_101013138 as "workforceVarianceEmpNum" --自有人力差异
+           ,t."backCalculationEmpOthNum" - d.c_101013140 as "workforceVarianceOthNum" --外包人力差异
+           ,t."backCalculationEmpOdNum" - d.c_101013139 as "workforceVarianceOdNum" --OD人力差异
+           
+           ,d1.c_101013138 + d1.c_101013139 + d1.c_101013140 as "totPersonsInServiceNum" --在职人数(总计)
+           ,d1.c_101013138 as "totPersonsInServiceEmpNum" --自有在职人数(总计)
+           ,d1.c_101013140 as "totPersonsInServiceOthNum" --外包在职人数(总计)
+           ,d1.c_101013139 as "totPersonsInServiceOdNum" --OD在职人数(总计)
+           
+           ,sum(t."backCalculationEmpNum")over() as "totBackCalculationEmpNum" --剩余预算反算人力(总计)
+           ,sum(t."backCalculationEmpEmpNum")over() as "totBackCalculationEmpEmpNum" --自有剩余预算反算人力(总计)
+           ,sum(t."backCalculationEmpOthNum")over() as "totBackCalculationEmpOthNum" --外包剩余预算反算人力(总计)
+           ,sum(t."backCalculationEmpOdNum")over() as "totBackCalculationEmpOdNum" --OD剩余预算反算人力(总计)
+           
+           ,sum(t."backCalculationEmpNum")over() - d1.c_101013138 - d1.c_101013139 - d1.c_101013140 as "totWorkforceVarianceNum" --人力差异(总计)
+           ,sum(t."backCalculationEmpEmpNum")over() - d1.c_101013138 as "totWorkforceVarianceEmpNum" --自有人力差异(总计)
+           ,sum(t."backCalculationEmpOthNum")over() - d1.c_101013140 as "totWorkforceVarianceOthNum" --外包人力差异(总计)
+           ,sum(t."backCalculationEmpOdNum")over() - d1.c_101013139 as "totWorkforceVarianceOdNum" --OD人力差异(总计) 		   
+  FROM (
+  
+  
+  
+SELECT 1 as "id"
+       ,t.period_id  as "periodId" --统计期--预算分配
+       #{# ,CASE WHEN #gbLv1MultCode#        = 1 THEN t.lv1_mult_code         END as "lv1MultCode"          #}# --lv1_多维CODE
+       #{# ,CASE WHEN #gbLv1MultCnName#      = 1 THEN t.lv1_mult_cn_name      END as "lv1MultCnName"        #}# --lv1_多维中文名称
+       #{# ,CASE WHEN #gbLv2MultCode#        = 1 THEN t.lv2_mult_code         END as "lv2MultCode"          #}# --lv2_多维CODE
+       #{# ,CASE WHEN #gbLv2MultCnName#      = 1 THEN t.lv2_mult_cn_name      END as "lv2MultCnName"        #}# --lv2_多维中文名称
+       #{# ,CASE WHEN #gbLv3MultCode#        = 1 THEN t.lv3_mult_code         END as "lv3MultCode"          #}# --lv3_多维CODE
+       #{# ,CASE WHEN #gbLv3MultCnName#      = 1 THEN t.lv3_mult_cn_name      END as "lv3MultCnName"        #}# --lv3_多维中文名称
+       #{# ,CASE WHEN #gbLv4MultCode#        = 1 THEN t.lv4_mult_code         END as "lv4MultCode"          #}# --lv4_多维CODE
+       #{# ,CASE WHEN #gbLv4MultCnName#      = 1 THEN t.lv4_mult_cn_name      END as "lv4MultCnName"        #}# --lv4_多维中文名称
+       #{# ,CASE WHEN #gbLv5MultCode#        = 1 THEN t.lv5_mult_code         END as "lv5MultCode"          #}# --lv5_多维CODE
+       #{# ,CASE WHEN #gbLv5MultCnName#      = 1 THEN t.lv5_mult_cn_name      END as "lv5MultCnName"        #}# --lv5_多维中文名称
+       #{# ,CASE WHEN #gbProjectCode#        = 1 THEN t.project_code          END as "projectCode"          #}# --项目CODE
+       #{# ,CASE WHEN #gbProjectName#        = 1 THEN t.project_name          END as "projectName"          #}# --项目名称
+       #{# ,CASE WHEN #gbDomain#             = 1 THEN t.domain                END as "domain"               #}# --领域
+       #{# ,CASE WHEN #gbCollectionUnit#     = 1 THEN t.collection_unit       END as "collectionUnit"       #}# --归集单元
+       #{# ,CASE WHEN #gbCategory#           = 1 THEN t.category              END as "category"             #}# --分类
+       #{# ,CASE WHEN #gbProductTypeCode#    = 1 THEN t.mult_type_code        END as "productTypeCode"      #}# --多维类型编码
+           ,t.emp_rates as "empRates"
+           ,t.oth_rates as "othRates"
+           ,t.od_rates as "odRates"
+           ,sum(t.budget_total_amount) as "budgetTotalAmount" --预算总额
+           ,sum(t.budget_emp_amount) as "budgetEmpAmount" --自有预算总额
+           ,sum(t.budget_oth_amount) as "budgetOthAmount" --合作预算总额
+           ,sum(t.budget_od_amount) as "budgetOdAmount" --od预算总额
+           
+           ,sum(t.available_total_amount) as "availableTotalAmount" --可用预算总额
+           ,sum(t.available_emp_amount) as "availableEmpAmount" --自有可用预算总额
+           ,sum(t.available_oth_amount) as "availableOthAmount" --合作可用预算总额
+           ,sum(t.available_od_amount) as "availableOdAmount" --od可用预算总额
+           
+           ,sum(t.acc_execute_total_amount) as "accExecuteTotalAmount" --年累计执行总额
+           ,sum(t.acc_execute_emp_amount) as "accExecuteEmpAmount" --自有年累计执行总额
+           ,sum(t.acc_execute_oth_amount) as "accExecuteOthAmount" --合作年累计执行总额
+           ,sum(t.acc_execute_od_amount) as "accExecuteOdAmount" --od年累计执行总额
+           
+           ,sum(t.execute_total_amount) as "executeTotalAmount" --月度执行总额
+           ,sum(t.execute_emp_amount) as "executeEmpAmount" --自有月度执行总额
+           ,sum(t.execute_oth_amount) as "executeOthAmount" --合作月度执行总额
+           ,sum(t.execute_od_amount) as "executeOdAmount" --od月度执行总额
+           
+           ,sum(t.available_total_amount) - sum(t.acc_execute_total_amount) as "remBudgetTotalAmount" --剩余预算
+           ,sum(t.available_emp_amount) - sum(t.acc_execute_emp_amount) as "remBudgetEmpAmount" --自有剩余预算
+           ,sum(t.available_oth_amount) - sum(t.acc_execute_oth_amount) as "remBudgetOthAmount" --外包剩余预算
+           ,sum(t.available_od_amount) - sum(t.acc_execute_od_amount) as "remBudgetOdAmount" --OD剩余预算
+           
+           ,case when t.emp_rates = 0 and t.oth_rates = 0 and t.od_rates = 0 then null else
+            case when t.emp_rates = 0 then 0 else (sum(t.available_emp_amount) - sum(t.acc_execute_emp_amount))*1.0/t.emp_rates end +
+            case when t.oth_rates = 0 then 0 else (sum(t.available_oth_amount) - sum(t.acc_execute_oth_amount))*1.0/t.oth_rates end +
+            case when t.od_rates = 0 then 0 else  (sum(t.available_od_amount) - sum(t.acc_execute_od_amount))*1.0/t.od_rates end end as "backCalculationEmpNum" --剩余预算反算人力
+           ,case when t.emp_rates = 0 then null else (sum(t.available_emp_amount) - sum(t.acc_execute_emp_amount))*1.0/t.emp_rates end as "backCalculationEmpEmpNum" --自有剩余预算反算人力
+           ,case when t.oth_rates = 0 then null else (sum(t.available_oth_amount) - sum(t.acc_execute_oth_amount))*1.0/t.oth_rates end as "backCalculationEmpOthNum" --外包剩余预算反算人力
+           ,case when t.od_rates = 0 then null else  (sum(t.available_od_amount) - sum(t.acc_execute_od_amount))*1.0/t.od_rates end as "backCalculationEmpOdNum" --OD剩余预算反算人力
+           
+           ,sum(t.lastyear_budget_total_amount) as "lastyearBudgetTotalAmount" --去年预算总额
+           --,sum(t.lastyear_budget_emp_amount) as "lastyearBudgetEmpAmount" --去年自有预算总额
+           --,sum(t.lastyear_budget_oth_amount) as "lastyearBudgetOthAmount" --去年外包预算总额
+           --,sum(t.lastyear_budget_od_amount) as "lastyearBudgetOdAmount" --去年OD预算总额
+           
+           ,sum(t.lastyear_acc_execute_total_amount) as "lastyearAccExecuteTotalAmount" --去年同期年累计执行总额
+           ,sum(t.lastyear_acc_execute_emp_amount) as "lastyearAccExecuteEmpAmount" --去年同期自有年累计执行总额
+           ,sum(t.lastyear_acc_execute_oth_amount) as "lastyearAccExecuteOthAmount" --去年同期外包年累计执行总额
+           ,sum(t.lastyear_acc_execute_od_amount) as "lastyearAccExecuteOdAmount" --去年同期OD年累计执行总额
+           
+           ,case
+              when sum(t.budget_total_amount) = 0 then
+                null
+              else
+                sum(t.budget_emp_amount)*1.0/sum(t.budget_total_amount)
+            end as "budgetEmpRate" --自有预算占比
+           ,case
+              when sum(t.budget_total_amount) = 0 then
+                null
+              else
+                sum(t.budget_oth_amount)*1.0/sum(t.budget_total_amount)
+            end as "budgetOthRate" --合作预算占比
+           ,case
+              when sum(t.budget_total_amount) = 0 then
+                null
+              else
+                sum(t.budget_od_amount)*1.0/sum(t.budget_total_amount)
+            end as "budgetOdRate" --od预算占比
+
+           ,case
+              when sum(t.available_total_amount) = 0 then
+                null
+              else
+                sum(t.acc_execute_total_amount)*1.0/sum(t.available_total_amount)
+            end as "accExecuteRate" --预算执行率
+            
+           ,case
+              when sum(t.available_emp_amount) = 0 then
+                null
+              else
+                sum(t.acc_execute_emp_amount)*1.0/sum(t.available_emp_amount)
+            end as "accEmpExecuteRate" --自有预算执行率
+            
+           ,case
+              when sum(t.available_oth_amount) = 0 then
+                null
+              else
+                sum(t.acc_execute_oth_amount)*1.0/sum(t.available_oth_amount)
+            end as "accOthExecuteRate" --外包预算执行率
+            
+           ,case
+              when sum(t.available_od_amount) = 0 then
+                null
+              else
+                sum(t.acc_execute_od_amount)*1.0/sum(t.available_od_amount)
+            end as "accOdExecuteRate" --OD预算执行率
+            
+           ,case
+              when sum(t.lastyear_budget_total_amount) = 0 then
+                null
+              else
+                (sum(t.budget_total_amount)-sum(t.lastyear_budget_total_amount))*1.0/sum(t.lastyear_budget_total_amount)
+            end as "budgetTotalYoyRate" --预算分配同比
+           ,case
+              when sum(t.lastyear_acc_execute_total_amount) = 0 then
+                null
+              else
+                (sum(t.acc_execute_total_amount)-sum(t.lastyear_acc_execute_total_amount))*1.0/sum(t.lastyear_acc_execute_total_amount)
+            end as "accExecuteTotalYoyRate" --预算执行同比
+           ,case
+              when sum(t.lastyear_acc_execute_emp_amount) = 0 then
+                null
+              else
+                (sum(t.acc_execute_emp_amount)-sum(t.lastyear_acc_execute_emp_amount))*1.0/sum(t.lastyear_acc_execute_emp_amount)
+            end as "accExecuteEmpYoyRate" --自有预算执行同比
+           ,case
+              when sum(t.lastyear_acc_execute_oth_amount) = 0 then
+                null
+              else
+                (sum(t.acc_execute_oth_amount)-sum(t.lastyear_acc_execute_oth_amount))*1.0/sum(t.lastyear_acc_execute_oth_amount)
+            end as "accExecuteOthYoyRate" --外包预算执行同比
+           ,case
+              when sum(t.lastyear_acc_execute_od_amount) = 0 then
+                null
+              else
+                (sum(t.acc_execute_od_amount)-sum(t.lastyear_acc_execute_od_amount))*1.0/sum(t.lastyear_acc_execute_od_amount)
+            end as "accExecuteOdYoyRate" --OD预算执行同比
+  from (
+select 
+	 a.year_month as period_id
+      ,t.lv1_mult_code   
+      ,t.lv1_mult_cn_name
+      ,t.lv2_mult_code   
+      ,t.lv2_mult_cn_name
+      ,t.lv3_mult_code   
+      ,t.lv3_mult_cn_name
+      ,t.lv4_mult_code   
+      ,t.lv4_mult_cn_name
+      ,t.lv5_mult_code   
+      ,t.lv5_mult_cn_name
+      ,b.project_code
+      ,b.project_name
+      ,f.domain
+      ,f.collection_unit
+      --,case when b.project_code is null then '其他' else f.category end as category
+      ,case when f.category is null then '其他' else f.category end as category
+      ,b.budget_total_amount
+      ,b.budget_emp_amount
+      ,b.budget_oth_amount
+      ,b.budget_od_amount
+      ,b.available_total_amount
+      ,b.available_emp_amount
+      ,b.available_oth_amount
+      ,b.available_od_amount
+      ,0 as acc_execute_total_amount
+      ,0 as acc_execute_emp_amount
+      ,0 as acc_execute_oth_amount
+      ,0 as acc_execute_od_amount
+      ,0 as execute_total_amount
+      ,0 as execute_emp_amount
+      ,0 as execute_oth_amount
+      ,0 as execute_od_amount
+      ,0 as lastyear_budget_total_amount
+      ,0 as lastyear_budget_emp_amount
+      ,0 as lastyear_budget_oth_amount
+      ,0 as lastyear_budget_od_amount
+      ,0 as lastyear_acc_execute_total_amount
+      ,0 as lastyear_acc_execute_emp_amount
+      ,0 as lastyear_acc_execute_oth_amount
+      ,0 as lastyear_acc_execute_od_amount
+      ,r.emp_rates
+      ,r.oth_rates
+      ,r.od_rates
+      ,t.mult_type_code
+  FROM devsecops.dim_multidimension_d t
+  left join devsecops.dim_account_period_d a
+    on a.period_type = 'M'
+    #{# and a.year_month >= '#yearIn#'||case when '#monthStart#' is null then '01'  else '#monthStart#' end #}#
+	#{# and a.year_month <= '#yearIn#'||case when '#monthEnd#' is null then '12'  else '#monthEnd#' end #}#
+	
+   #{# and a.year_month = '#periodId#' #}#
+   #{# and a.year_month >= '#periodYear#'||'01' #}#
+   #{# and a.year_month <= case when to_char(now(),'yyyy') = '#periodYear#' then to_char(now(),'yyyymm') else '#periodYear#'||'12' end #}#
+       and (1 = 1 
+	   #{# and a.year_month = case when to_char(now(),'yyyy') = '#periodYear#' then to_char(now(),'yyyymm') else '#periodYear#'||'12' end #}# 
+	   #{# or '#trendType#' = 'Y' #}#
+	   #{# or '#yearIn#' = '#yearIn#' #}#
+	   )
+  left join devsecops.bbp_budget_assign_t b
+    on t.mult_key = b.mult_key
+   and a.year = b.period_year
+  left join devsecops.fnd_investment_type_t f
+    on b.project_code = f.project_code
+   and a.year = f.year
+  left join (select year_and_month,
+                    sum(case when personnel_category = '华为' then rates else 0 end) as emp_rates,
+                    sum(case when personnel_category = '业务外包' then rates else 0 end) as oth_rates,
+                    sum(case when personnel_category = '人力外包' then rates else 0 end) as od_rates
+               from devsecops.fnd_rates_t
+              group by year_and_month) r
+   on a.year_month = r.year_and_month
+ WHERE 1 = 1
+   AND COALESCE(t.mult_status, 'live') IN ('pre-registered','pre-released','live','stable','other'  #{#,'#isSunset#' #}#)  --是否日落模块
+   
+   #{# AND case when to_char(now(),'yyyymm') <= '#yearIn#'||'#monthStart#' then current_date else to_timestamp('#yearIn#'||'#monthStart#','YYYYMM') + interval'1 months' end >= t.scd_active_begin_date #}#
+   #{# AND case when to_char(now(),'yyyymm') <= '#yearIn#'||'#monthEnd#' then current_date else to_timestamp('#yearIn#'||'#monthEnd#','YYYYMM') + interval'1 months' end <= t.scd_active_end_date #}#
+   
+   
+   #{# AND case when to_char(now(),'yyyymm') <= '#periodId#' then current_date else to_timestamp('#periodId#','YYYYMM') + interval'1 months' end >= t.scd_active_begin_date #}#
+   #{# AND case when to_char(now(),'yyyymm') <= '#periodId#' then current_date else to_timestamp('#periodId#','YYYYMM') + interval'1 months' end <= t.scd_active_end_date #}#
+   
+   #{# AND case when to_char(now(),'yyyymm') <= '#periodYear#' then current_date else to_timestamp('#periodYear#','YYYY') + interval'1 year' end >= t.scd_active_begin_date #}#
+   #{# AND case when to_char(now(),'yyyymm') <= '#periodYear#' then current_date else to_timestamp('#periodYear#','YYYY') + interval'1 year' end <= t.scd_active_end_date #}#
+   
+   #{# AND t.mult_type_code = '#productTypeCode#' #}#         --多维类型编码
+
+   #{# AND t.lv1_mult_code IN ('#[#lv1MultCode#]#') #}#           --lv1_多维CODE
+   #{# AND t.lv1_mult_cn_name IN ('#[#lv1MultCnName#]#') #}#      --lv1_多维中文名称
+
+   #{# AND t.lv2_mult_code IN ('#[#lv2MultCode#]#') #}#           --lv2_多维CODE
+   #{# AND t.lv2_mult_cn_name IN ('#[#lv2MultCnName#]#') #}#      --lv2_多维中文名称
+
+   #{# AND t.lv3_mult_code IN ('#[#lv3MultCode#]#') #}#           --lv3_多维CODE
+   #{# AND t.lv3_mult_cn_name IN ('#[#lv3MultCnName#]#') #}#      --lv3_多维中文名称
+
+   #{# AND t.lv4_mult_code IN ('#[#lv4MultCode#]#') #}#           --lv4_多维CODE
+   #{# AND t.lv4_mult_cn_name IN ('#[#lv4MultCnName#]#') #}#      --lv4_多维中文名称
+
+   #{# AND t.lv5_mult_code IN ('#[#lv5MultCode#]#') #}#           --lv5_多维CODE
+   #{# AND t.lv5_mult_cn_name IN ('#[#lv5MultCnName#]#') #}#      --lv5_多维中文名称
+
+   #{# AND COALESCE(f.domain,'NULL') IN ( '#[#domain#]#' ) #}#                        --领域
+   #{# AND COALESCE(f.collection_unit,'NULL') IN ( '#[#collectionUnit#]#' ) #}#       --归属单元
+   #{# AND COALESCE(f.category,'NULL') IN ( '#[#category#]#' ) #}#                    --分类
+   #{# AND COALESCE(f.project_code,'NULL') IN ( '#[#projectCode#]#' ) #}#                    --项目编码
+   #{# AND COALESCE(f.project_name,'NULL') IN ( '#[#projectName#]#' ) #}#                    --项目名称
+   and (t.mult_level_id = '2' or t.mult_key = -999999)
+ union all
+select to_char(to_timestamp(a.year_month,'yyyymm01') + interval'1 year','yyyymm') as period_id--预算执行
+      ,t.lv1_mult_code   
+      ,t.lv1_mult_cn_name
+      ,t.lv2_mult_code   
+      ,t.lv2_mult_cn_name
+      ,t.lv3_mult_code   
+      ,t.lv3_mult_cn_name
+      ,t.lv4_mult_code   
+      ,t.lv4_mult_cn_name
+      ,t.lv5_mult_code   
+      ,t.lv5_mult_cn_name
+      ,b.project_code
+      ,b.project_name
+      ,f.domain
+      ,f.collection_unit
+      --,case when b.project_code is null then '其他' else f.category end as category
+      ,case when f.category is null then '其他' else f.category end as category
+      ,0 as budget_total_amount
+      ,0 as budget_emp_amount
+      ,0 as budget_oth_amount
+      ,0 as budget_od_amount
+      ,0 as available_total_amount
+      ,0 as available_emp_amount
+      ,0 as available_oth_amount
+      ,0 as available_od_amount
+      ,0 as acc_execute_total_amount
+      ,0 as acc_execute_emp_amount
+      ,0 as acc_execute_oth_amount
+      ,0 as acc_execute_od_amount
+      ,0 as execute_total_amount
+      ,0 as execute_emp_amount
+      ,0 as execute_oth_amount
+      ,0 as execute_od_amount
+      ,b.budget_total_amount as lastyear_budget_total_amount
+      ,b.budget_emp_amount as lastyear_budget_emp_amount
+      ,b.budget_oth_amount as lastyear_budget_oth_amount
+      ,b.budget_od_amount as lastyear_budget_od_amount
+      ,0 as lastyear_acc_execute_total_amount
+      ,0 as lastyear_acc_execute_emp_amount
+      ,0 as lastyear_acc_execute_oth_amount
+      ,0 as lastyear_acc_execute_od_amount
+      ,r.emp_rates
+      ,r.oth_rates
+      ,r.od_rates
+      ,t.mult_type_code
+  FROM devsecops.dim_multidimension_d t
+  left join devsecops.dim_account_period_d a
+    on a.period_type = 'M'
+	#{# and a.year_month >= to_char(to_timestamp('#yearIn#'||case when '#monthStart#' is null then '01'  else '#monthStart#' end,'yyyymm01') - interval'1 year','yyyymm') #}#
+	#{# and a.year_month <= to_char(to_timestamp('#yearIn#'||case when '#monthEnd#' is null then '01'  else '#monthEnd#' end,'yyyymm01') - interval'1 year','yyyymm') #}#
+	
+   #{# and a.year_month = to_char(to_timestamp('#periodId#','yyyymm01') - interval'1 year','yyyymm') #}#
+   #{# and a.year_month >= to_char(to_timestamp('#periodYear#','yyyy0101') - interval'1 year','yyyymm') #}#
+   #{# and a.year_month <= case when to_char(now(),'yyyy') = '#periodYear#' then to_char(now() - interval'1 year','yyyymm') else to_char(to_timestamp('#periodYear#'||'12','yyyymm01') - interval'1 year','yyyymm') end #}#
+       and (1 = 1 #{# and a.year_month = case when to_char(now(),'yyyy') = '#periodYear#' then to_char(now() - interval'1 year','yyyymm') else to_char(to_timestamp('#periodYear#'||'12','yyyymm01') - interval'1 year','yyyymm') end #}# 
+	   #{# or '#trendType#' = 'Y' #}#
+	   #{# or '#yearIn#' = '#yearIn#' #}#)
+  left join devsecops.bbp_budget_assign_t b
+    on t.mult_key = b.mult_key
+   and a.year = b.period_year
+  left join devsecops.fnd_investment_type_t f
+    on b.project_code = f.project_code
+   and a.year = f.year
+  left join (select year_and_month,
+                    sum(case when personnel_category = '华为' then rates else 0 end) as emp_rates,
+                    sum(case when personnel_category = '业务外包' then rates else 0 end) as oth_rates,
+                    sum(case when personnel_category = '人力外包' then rates else 0 end) as od_rates
+               from devsecops.fnd_rates_t
+              group by year_and_month) r
+   on to_char(to_timestamp(a.year_month,'yyyymm') + interval'1 year','yyyymm') = r.year_and_month
+ WHERE 1 = 1
+   AND COALESCE(t.mult_status, 'live') IN ('pre-registered','pre-released','live','stable','other'  #{#,'#isSunset#' #}#)  --是否日落模块
+   #{# AND case when to_char(now(),'yyyymm') <= '#yearIn#'||'#monthStart#' then current_date else to_timestamp('#yearIn#'||'#monthStart#','YYYYMM') + interval'1 months' end >= t.scd_active_begin_date #}#
+   #{# AND case when to_char(now(),'yyyymm') <= '#yearIn#'||'#monthEnd#' then current_date else to_timestamp('#yearIn#'||'#monthEnd#','YYYYMM') + interval'1 months' end <= t.scd_active_end_date #}#
+   
+   
+   #{# AND case when to_char(now(),'yyyymm') <= '#periodId#' then current_date else to_timestamp('#periodId#','YYYYMM') + interval'1 months' end >= t.scd_active_begin_date #}#
+   #{# AND case when to_char(now(),'yyyymm') <= '#periodId#' then current_date else to_timestamp('#periodId#','YYYYMM') + interval'1 months' end <= t.scd_active_end_date #}#
+   
+   #{# AND case when to_char(now(),'yyyymm') <= '#periodYear#' then current_date else to_timestamp('#periodYear#','YYYY') + interval'1 year' end >= t.scd_active_begin_date #}#
+   #{# AND case when to_char(now(),'yyyymm') <= '#periodYear#' then current_date else to_timestamp('#periodYear#','YYYY') + interval'1 year' end <= t.scd_active_end_date #}#
+
+   #{# AND t.mult_type_code = '#productTypeCode#' #}#         --多维类型编码
+
+   #{# AND t.lv1_mult_code IN ('#[#lv1MultCode#]#') #}#           --lv1_多维CODE
+   #{# AND t.lv1_mult_cn_name IN ('#[#lv1MultCnName#]#') #}#      --lv1_多维中文名称
+
+   #{# AND t.lv2_mult_code IN ('#[#lv2MultCode#]#') #}#           --lv2_多维CODE
+   #{# AND t.lv2_mult_cn_name IN ('#[#lv2MultCnName#]#') #}#      --lv2_多维中文名称
+
+   #{# AND t.lv3_mult_code IN ('#[#lv3MultCode#]#') #}#           --lv3_多维CODE
+   #{# AND t.lv3_mult_cn_name IN ('#[#lv3MultCnName#]#') #}#      --lv3_多维中文名称
+
+   #{# AND t.lv4_mult_code IN ('#[#lv4MultCode#]#') #}#           --lv4_多维CODE
+   #{# AND t.lv4_mult_cn_name IN ('#[#lv4MultCnName#]#') #}#      --lv4_多维中文名称
+
+   #{# AND t.lv5_mult_code IN ('#[#lv5MultCode#]#') #}#           --lv5_多维CODE
+   #{# AND t.lv5_mult_cn_name IN ('#[#lv5MultCnName#]#') #}#      --lv5_多维中文名称
+
+   #{# AND COALESCE(f.domain,'NULL') IN ( '#[#domain#]#' ) #}#                        --领域
+   #{# AND COALESCE(f.collection_unit,'NULL') IN ( '#[#collectionUnit#]#' ) #}#       --归属单元
+   #{# AND COALESCE(f.category,'NULL') IN ( '#[#category#]#' ) #}#                    --分类
+   #{# AND COALESCE(f.project_code,'NULL') IN ( '#[#projectCode#]#' ) #}#                    --项目编码
+   #{# AND COALESCE(f.project_name,'NULL') IN ( '#[#projectName#]#' ) #}#                    --项目名称
+   and (t.mult_level_id = '2' or t.mult_key = -999999)
+   #{# AND '#trendType#' = 'N' #}#
+ union all
+select a.year_month as period_id
+      ,t.lv1_mult_code   
+      ,t.lv1_mult_cn_name
+      ,t.lv2_mult_code   
+      ,t.lv2_mult_cn_name
+      ,t.lv3_mult_code   
+      ,t.lv3_mult_cn_name
+      ,t.lv4_mult_code   
+      ,t.lv4_mult_cn_name
+      ,t.lv5_mult_code   
+      ,t.lv5_mult_cn_name
+      ,b.project_code
+      ,b.project_name
+      ,f.domain
+      ,f.collection_unit
+      --,case when b.project_code is null then '其他' else f.category end as category
+      ,case when f.category is null then '其他' else f.category end as category
+      ,0 as budget_total_amount
+      ,0 as budget_emp_amount
+      ,0 as budget_oth_amount
+      ,0 as budget_od_amount
+      ,0 as available_total_amount
+      ,0 as available_emp_amount
+      ,0 as available_oth_amount
+      ,0 as available_od_amount
+      ,b.acc_execute_total_amount
+      ,b.acc_execute_emp_amount
+      ,b.acc_execute_oth_amount
+      ,b.acc_execute_od_amount
+      ,b.execute_total_amount
+      ,b.execute_emp_amount
+      ,b.execute_oth_amount
+      ,b.execute_od_amount
+      ,0 as lastyear_budget_total_amount
+      ,0 as lastyear_budget_emp_amount
+      ,0 as lastyear_budget_oth_amount
+      ,0 as lastyear_budget_od_amount
+      ,0 as lastyear_acc_execute_total_amount
+      ,0 as lastyear_acc_execute_emp_amount
+      ,0 as lastyear_acc_execute_oth_amount
+      ,0 as lastyear_acc_execute_od_amount
+      ,r.emp_rates
+      ,r.oth_rates
+      ,r.od_rates
+      ,t.mult_type_code
+  FROM devsecops.dim_multidimension_d t
+  left join devsecops.dim_account_period_d a
+    on a.period_type = 'M'
+	#{# and a.year_month >= '#yearIn#'||case when '#monthStart#' is null then '01'  else '#monthStart#' end #}#
+	#{# and a.year_month <= '#yearIn#'||case when '#monthEnd#' is null then '12'  else '#monthEnd#' end #}#
+	
+   #{# and a.year_month = '#periodId#' #}#
+   #{# and a.year_month >= '#periodYear#'||'01' #}#
+   #{# and a.year_month <= case when to_char(now(),'yyyy') = '#periodYear#' then to_char(now(),'yyyymm') else '#periodYear#'||'12' end #}#
+       and (1 = 1 #{# and a.year_month = case when to_char(now(),'yyyy') = '#periodYear#' then to_char(now(),'yyyymm') else '#periodYear#'||'12' end #}# 
+	   #{# or '#trendType#' = 'Y' #}#
+       #{# or '#yearIn#' = '#yearIn#' #}#	   )
+  left join devsecops.bbp_budget_execute_t b
+    on t.mult_key = b.mult_key
+   and a.year_month = b.period_id
+  left join devsecops.fnd_investment_type_t f
+    on b.project_code = f.project_code
+   and a.year = f.year
+  left join (select year_and_month,
+                    sum(case when personnel_category = '华为' then rates else 0 end) as emp_rates,
+                    sum(case when personnel_category = '业务外包' then rates else 0 end) as oth_rates,
+                    sum(case when personnel_category = '人力外包' then rates else 0 end) as od_rates
+               from devsecops.fnd_rates_t
+              group by year_and_month) r
+   on a.year_month = r.year_and_month
+ WHERE 1 = 1
+   AND COALESCE(t.mult_status, 'live') IN ('pre-registered','pre-released','live','stable','other'  #{#,'#isSunset#' #}#)  --是否日落模块
+   #{# AND case when to_char(now(),'yyyymm') <= '#yearIn#'||'#monthStart#' then current_date else to_timestamp('#yearIn#'||'#monthStart#','YYYYMM') + interval'1 months' end >= t.scd_active_begin_date #}#
+   #{# AND case when to_char(now(),'yyyymm') <= '#yearIn#'||'#monthEnd#' then current_date else to_timestamp('#yearIn#'||'#monthEnd#','YYYYMM') + interval'1 months' end <= t.scd_active_end_date #}#
+   
+
+   #{# AND case when to_char(now(),'yyyymm') <= '#periodId#' then current_date else to_timestamp('#periodId#','YYYYMM') + interval'1 months' end >= t.scd_active_begin_date #}#
+   #{# AND case when to_char(now(),'yyyymm') <= '#periodId#' then current_date else to_timestamp('#periodId#','YYYYMM') + interval'1 months' end <= t.scd_active_end_date #}#
+   
+   #{# AND case when to_char(now(),'yyyymm') <= '#periodYear#' then current_date else to_timestamp('#periodYear#','YYYY') + interval'1 year' end >= t.scd_active_begin_date #}#
+   #{# AND case when to_char(now(),'yyyymm') <= '#periodYear#' then current_date else to_timestamp('#periodYear#','YYYY') + interval'1 year' end <= t.scd_active_end_date #}#
+   
+   #{# AND t.mult_type_code = '#productTypeCode#' #}#         --多维类型编码
+
+   #{# AND t.lv1_mult_code IN ('#[#lv1MultCode#]#') #}#           --lv1_多维CODE
+   #{# AND t.lv1_mult_cn_name IN ('#[#lv1MultCnName#]#') #}#      --lv1_多维中文名称
+
+   #{# AND t.lv2_mult_code IN ('#[#lv2MultCode#]#') #}#           --lv2_多维CODE
+   #{# AND t.lv2_mult_cn_name IN ('#[#lv2MultCnName#]#') #}#      --lv2_多维中文名称
+
+   #{# AND t.lv3_mult_code IN ('#[#lv3MultCode#]#') #}#           --lv3_多维CODE
+   #{# AND t.lv3_mult_cn_name IN ('#[#lv3MultCnName#]#') #}#      --lv3_多维中文名称
+
+   #{# AND t.lv4_mult_code IN ('#[#lv4MultCode#]#') #}#           --lv4_多维CODE
+   #{# AND t.lv4_mult_cn_name IN ('#[#lv4MultCnName#]#') #}#      --lv4_多维中文名称
+
+   #{# AND t.lv5_mult_code IN ('#[#lv5MultCode#]#') #}#           --lv5_多维CODE
+   #{# AND t.lv5_mult_cn_name IN ('#[#lv5MultCnName#]#') #}#      --lv5_多维中文名称
+   
+   #{# AND COALESCE(f.domain,'NULL') IN ( '#[#domain#]#' ) #}#                        --领域
+   #{# AND COALESCE(f.collection_unit,'NULL') IN ( '#[#collectionUnit#]#' ) #}#       --归属单元
+   #{# AND COALESCE(f.category,'NULL') IN ( '#[#category#]#' ) #}#                    --分类
+   #{# AND COALESCE(f.project_code,'NULL') IN ( '#[#projectCode#]#' ) #}#                    --项目编码
+   #{# AND COALESCE(f.project_name,'NULL') IN ( '#[#projectName#]#' ) #}#                    --项目名称
+   and (t.mult_level_id = '2' or t.mult_key = -999999)
+ union all
+select to_char(to_timestamp(a.year_month,'yyyymm01') + interval'1 year','yyyymm') as period_id--
+      ,t.lv1_mult_code   
+      ,t.lv1_mult_cn_name
+      ,t.lv2_mult_code   
+      ,t.lv2_mult_cn_name
+      ,t.lv3_mult_code   
+      ,t.lv3_mult_cn_name
+      ,t.lv4_mult_code   
+      ,t.lv4_mult_cn_name
+      ,t.lv5_mult_code   
+      ,t.lv5_mult_cn_name
+      ,b.project_code
+      ,b.project_name
+      ,f.domain
+      ,f.collection_unit
+      --,case when b.project_code is null then '其他' else f.category end as category
+      ,case when f.category is null then '其他' else f.category end as category
+      ,0 as budget_total_amount
+      ,0 as budget_emp_amount
+      ,0 as budget_oth_amount
+      ,0 as budget_od_amount
+      ,0 as available_total_amount
+      ,0 as available_emp_amount
+      ,0 as available_oth_amount
+      ,0 as available_od_amount
+      ,0 as acc_execute_total_amount
+      ,0 as acc_execute_emp_amount
+      ,0 as acc_execute_oth_amount
+      ,0 as acc_execute_od_amount
+      ,0 as execute_total_amount
+      ,0 as execute_emp_amount
+      ,0 as execute_oth_amount
+      ,0 as execute_od_amount
+      ,0 as lastyear_budget_total_amount
+      ,0 as lastyear_budget_emp_amount
+      ,0 as lastyear_budget_oth_amount
+      ,0 as lastyear_budget_od_amount
+      ,b.acc_execute_total_amount as lastyear_acc_execute_total_amount
+      ,b.acc_execute_emp_amount as lastyear_acc_execute_emp_amount
+      ,b.acc_execute_oth_amount as lastyear_acc_execute_oth_amount
+      ,b.acc_execute_od_amount as lastyear_acc_execute_od_amount
+      ,r.emp_rates
+      ,r.oth_rates
+      ,r.od_rates
+      ,t.mult_type_code
+  FROM devsecops.dim_multidimension_d t
+  left join devsecops.dim_account_period_d a
+    on a.period_type = 'M'
+	#{# and a.year_month >= to_char(to_timestamp('#yearIn#'||case when '#monthStart#' is null then '01'  else '#monthStart#' end,'yyyymm01') - interval'1 year','yyyymm') #}#
+	#{# and a.year_month <= to_char(to_timestamp('#yearIn#'||case when '#monthEnd#' is null then '01'  else '#monthEnd#' end,'yyyymm01') - interval'1 year','yyyymm') #}#
+	
+   #{# and a.year_month = to_char(to_timestamp('#periodId#','yyyymm01') - interval'1 year','yyyymm') #}#
+   #{# and a.year_month >= to_char(to_timestamp('#periodYear#','yyyy0101') - interval'1 year','yyyymm') #}#
+   #{# and a.year_month <= case when to_char(now(),'yyyy') = '#periodYear#' then to_char(now() - interval'1 year','yyyymm') else to_char(to_timestamp('#periodYear#'||'12','yyyymm01') - interval'1 year','yyyymm') end #}#
+       and (1 = 1 #{# and a.year_month = case when to_char(now(),'yyyy') = '#periodYear#' then to_char(now() - interval'1 year','yyyymm') else to_char(to_timestamp('#periodYear#'||'12','yyyymm01') - interval'1 year','yyyymm') end #}# 
+	   #{# or '#trendType#' = 'Y' #}#
+	   #{# or '#yearIn#' = '#yearIn#' #}#)
+  left join devsecops.bbp_budget_execute_t b
+    on t.mult_key = b.mult_key
+   and a.year_month = b.period_id
+  left join devsecops.fnd_investment_type_t f
+    on b.project_code = f.project_code
+   and a.year = f.year
+  left join (select year_and_month,
+                    sum(case when personnel_category = '华为' then rates else 0 end) as emp_rates,
+                    sum(case when personnel_category = '业务外包' then rates else 0 end) as oth_rates,
+                    sum(case when personnel_category = '人力外包' then rates else 0 end) as od_rates
+               from devsecops.fnd_rates_t
+              group by year_and_month) r
+   on to_char(to_timestamp(a.year_month,'yyyymm') + interval'1 year','yyyymm') = r.year_and_month
+ WHERE 1 = 1
+   AND COALESCE(t.mult_status, 'live') IN ('pre-registered','pre-released','live','stable','other'  #{#,'#isSunset#' #}#)  --是否日落模块
+   #{# AND case when to_char(now(),'yyyymm') <= '#yearIn#'||'#monthStart#' then current_date else to_timestamp('#yearIn#'||'#monthStart#','YYYYMM') + interval'1 months' end >= t.scd_active_begin_date #}#
+   #{# AND case when to_char(now(),'yyyymm') <= '#yearIn#'||'#monthEnd#' then current_date else to_timestamp('#yearIn#'||'#monthEnd#','YYYYMM') + interval'1 months' end <= t.scd_active_end_date #}#
+   
+ 
+   #{# AND case when to_char(now(),'yyyymm') <= '#periodId#' then current_date else to_timestamp('#periodId#','YYYYMM') + interval'1 months' end >= t.scd_active_begin_date #}#
+   #{# AND case when to_char(now(),'yyyymm') <= '#periodId#' then current_date else to_timestamp('#periodId#','YYYYMM') + interval'1 months' end <= t.scd_active_end_date #}#
+   
+   #{# AND case when to_char(now(),'yyyymm') <= '#periodYear#' then current_date else to_timestamp('#periodYear#','YYYY') + interval'1 year' end >= t.scd_active_begin_date #}#
+   #{# AND case when to_char(now(),'yyyymm') <= '#periodYear#' then current_date else to_timestamp('#periodYear#','YYYY') + interval'1 year' end <= t.scd_active_end_date #}#
+   
+   #{# AND t.mult_type_code = '#productTypeCode#' #}#         --多维类型编码
+
+   #{# AND t.lv1_mult_code IN ('#[#lv1MultCode#]#') #}#           --lv1_多维CODE
+   #{# AND t.lv1_mult_cn_name IN ('#[#lv1MultCnName#]#') #}#      --lv1_多维中文名称
+
+   #{# AND t.lv2_mult_code IN ('#[#lv2MultCode#]#') #}#           --lv2_多维CODE
+   #{# AND t.lv2_mult_cn_name IN ('#[#lv2MultCnName#]#') #}#      --lv2_多维中文名称
+
+   #{# AND t.lv3_mult_code IN ('#[#lv3MultCode#]#') #}#           --lv3_多维CODE
+   #{# AND t.lv3_mult_cn_name IN ('#[#lv3MultCnName#]#') #}#      --lv3_多维中文名称
+
+   #{# AND t.lv4_mult_code IN ('#[#lv4MultCode#]#') #}#           --lv4_多维CODE
+   #{# AND t.lv4_mult_cn_name IN ('#[#lv4MultCnName#]#') #}#      --lv4_多维中文名称
+
+   #{# AND t.lv5_mult_code IN ('#[#lv5MultCode#]#') #}#           --lv5_多维CODE
+   #{# AND t.lv5_mult_cn_name IN ('#[#lv5MultCnName#]#') #}#      --lv5_多维中文名称
+   
+   #{# AND COALESCE(f.domain,'NULL') IN ( '#[#domain#]#' ) #}#                        --领域
+   #{# AND COALESCE(f.collection_unit,'NULL') IN ( '#[#collectionUnit#]#' ) #}#       --归属单元
+   #{# AND COALESCE(f.category,'NULL') IN ( '#[#category#]#' ) #}#                    --分类
+   #{# AND COALESCE(f.project_code,'NULL') IN ( '#[#projectCode#]#' ) #}#                    --项目编码
+   #{# AND COALESCE(f.project_name,'NULL') IN ( '#[#projectName#]#' ) #}#                    --项目名称
+   and (t.mult_level_id = '2' or t.mult_key = -999999)
+   #{# AND '#trendType#' = 'N' #}#
+   ) t
+ GROUP BY  t.emp_rates
+          ,t.oth_rates
+          ,t.od_rates
+          ,t.period_id --统计期
+       #{# ,CASE WHEN #gbLv1MultCode#        = 1 THEN t.lv1_mult_code         END #}# --lv1_多维CODE
+       #{# ,CASE WHEN #gbLv1MultCnName#      = 1 THEN t.lv1_mult_cn_name      END #}# --lv1_多维中文名称
+       #{# ,CASE WHEN #gbLv2MultCode#        = 1 THEN t.lv2_mult_code         END #}# --lv2_多维CODE
+       #{# ,CASE WHEN #gbLv2MultCnName#      = 1 THEN t.lv2_mult_cn_name      END #}# --lv2_多维中文名称
+       #{# ,CASE WHEN #gbLv3MultCode#        = 1 THEN t.lv3_mult_code         END #}# --lv3_多维CODE
+       #{# ,CASE WHEN #gbLv3MultCnName#      = 1 THEN t.lv3_mult_cn_name      END #}# --lv3_多维中文名称
+       #{# ,CASE WHEN #gbLv4MultCode#        = 1 THEN t.lv4_mult_code         END #}# --lv4_多维CODE
+       #{# ,CASE WHEN #gbLv4MultCnName#      = 1 THEN t.lv4_mult_cn_name      END #}# --lv4_多维中文名称
+       #{# ,CASE WHEN #gbLv5MultCode#        = 1 THEN t.lv5_mult_code         END #}# --lv5_多维CODE
+       #{# ,CASE WHEN #gbLv5MultCnName#      = 1 THEN t.lv5_mult_cn_name      END #}# --lv5_多维中文名称
+       #{# ,CASE WHEN #gbProjectCode#        = 1 THEN t.project_code          END #}# --项目CODE
+       #{# ,CASE WHEN #gbProjectName#        = 1 THEN t.project_name          END #}# --项目名称
+       #{# ,CASE WHEN #gbDomain#             = 1 THEN t.domain                END #}# --领域
+       #{# ,CASE WHEN #gbCollectionUnit#     = 1 THEN t.collection_unit       END #}# --归集单元
+       #{# ,CASE WHEN #gbCategory#           = 1 THEN t.category              END #}# --分类
+       #{# ,CASE WHEN #gbProductTypeCode#    = 1 THEN t.mult_type_code        END #}# --多维类型编码
+       ) t
+  LEFT JOIN (
+select t.period_id as "periodId"
+       #{# ,CASE WHEN #gbLv1MultCode#        = 1 THEN m.lv1_mult_code         END as "lv1MultCode"          #}# --lv1_多维CODE
+       #{# ,CASE WHEN #gbLv2MultCode#        = 1 THEN m.lv2_mult_code         END as "lv2MultCode"          #}# --lv2_多维CODE
+       #{# ,CASE WHEN #gbLv3MultCode#        = 1 THEN m.lv3_mult_code         END as "lv3MultCode"          #}# --lv3_多维CODE
+       #{# ,CASE WHEN #gbLv4MultCode#        = 1 THEN m.lv4_mult_code         END as "lv4MultCode"          #}# --lv4_多维CODE
+       #{# ,CASE WHEN #gbLv5MultCode#        = 1 THEN m.lv5_mult_code         END as "lv5MultCode"          #}# --lv5_多维CODE
+      ,count(distinct
+       case
+         when t.person_type_code_name = '华为' then
+           t.latest_employee_key
+       end) as c_101013138,
+       count(distinct
+       case
+         when t.person_type_code_name = '业务外包' then
+           t.latest_employee_key
+       end) as c_101013140,
+       count(distinct
+       case
+         when t.person_type_code_name = 'OD' then
+           t.latest_employee_key
+       end) as c_101013139
+  from devsecops.hr_person_detail_t t
+ inner join devsecops.dim_department_d p
+    on t.dept_key = p.dept_key
+   and t.tenant_id = p.tenant_id
+   and p.scd_active_ind = 1
+   and p.status_flag = '1'
+   and p.del_flag = 'N'
+ inner join devsecops.dim_multidimension_d m 
+    on t.mult_key = m.mult_key
+   and t.tenant_id = m.tenant_id
+   and m.scd_active_ind = 1
+   and m.del_flag = 'N'
+   and coalesce(m.mult_status,'live') in ('pre-registered','pre-released','live','stable','other', 'sunset')
+   and coalesce(m.lv4_mult_status,'live') in ('pre-registered','pre-released','live','stable','other', 'sunset')
+ where t.employee_key > 0
+   --and t.period_id = '202212'
+   and t.mult_valid_number <= '1'
+   and t.person_type_code_name in ('华为','业务外包','OD')
+   #{# and t.period_id >= '#yearIn#'||case when '#monthStart#' is null then '01'  else '#monthStart#' end #}#
+   #{# and t.period_id <= '#yearIn#'||case when '#monthEnd#' is null then '12'  else '#monthEnd#' end #}#
+   
+   #{# and t.period_id = '#periodId#' #}#
+   #{# and t.period_id >= '#periodYear#'||'01' #}#
+   #{# and t.period_id <= case when to_char(now(),'yyyy') = '#periodYear#' then to_char(now(),'yyyymm') else '#periodYear#'||'12' end #}#
+       and (1 = 1 #{# and t.period_id = case when to_char(now(),'yyyy') = '#periodYear#' then to_char(now(),'yyyymm') else '#periodYear#'||'12' end #}# 
+	   #{# or '#trendType#' = 'Y' #}#
+	   #{# or '#yearIn#' = '#yearIn#' #}#
+	   )
+       
+   AND CASE 
+         #{# WHEN 'Y' = '#label#' THEN 1 #}# --标签，由于此段代码会影响性能，加一个标签参数，用来控制只有需要展示在职人数时，参数label传Y时，此段代码才生效       
+             WHEN 1 = 1 THEN 0
+       END = 1
+   
+   #{# AND m.mult_type_code = '#productTypeCode#' #}#         --多维类型编码
+
+   #{# AND m.lv1_mult_code IN ('#[#lv1MultCode#]#') #}#           --lv1_多维CODE
+   #{# AND m.lv1_mult_cn_name IN ('#[#lv1MultCnName#]#') #}#      --lv1_多维中文名称
+
+   #{# AND m.lv2_mult_code IN ('#[#lv2MultCode#]#') #}#           --lv2_多维CODE
+   #{# AND m.lv2_mult_cn_name IN ('#[#lv2MultCnName#]#') #}#      --lv2_多维中文名称
+
+   #{# AND m.lv3_mult_code IN ('#[#lv3MultCode#]#') #}#           --lv3_多维CODE
+   #{# AND m.lv3_mult_cn_name IN ('#[#lv3MultCnName#]#') #}#      --lv3_多维中文名称
+
+   #{# AND m.lv4_mult_code IN ('#[#lv4MultCode#]#') #}#           --lv4_多维CODE
+   #{# AND m.lv4_mult_cn_name IN ('#[#lv4MultCnName#]#') #}#      --lv4_多维中文名称
+
+   #{# AND m.lv5_mult_code IN ('#[#lv5MultCode#]#') #}#           --lv5_多维CODE
+   #{# AND m.lv5_mult_cn_name IN ('#[#lv5MultCnName#]#') #}#      --lv5_多维中文名称
+ group by t.period_id
+       #{# ,CASE WHEN #gbLv1MultCode#        = 1 THEN m.lv1_mult_code         END #}# --lv1_多维CODE
+       #{# ,CASE WHEN #gbLv2MultCode#        = 1 THEN m.lv2_mult_code         END #}# --lv2_多维CODE
+       #{# ,CASE WHEN #gbLv3MultCode#        = 1 THEN m.lv3_mult_code         END #}# --lv3_多维CODE
+       #{# ,CASE WHEN #gbLv4MultCode#        = 1 THEN m.lv4_mult_code         END #}# --lv4_多维CODE
+       #{# ,CASE WHEN #gbLv5MultCode#        = 1 THEN m.lv5_mult_code         END #}# --lv5_多维CODE
+  ) d
+    ON CASE
+         #{# WHEN #gbLv5MultCode#        = 1 THEN t."lv5MultCode" #}#
+         #{# WHEN #gbLv4MultCode#        = 1 THEN t."lv4MultCode" #}#
+         #{# WHEN #gbLv3MultCode#        = 1 THEN t."lv3MultCode" #}#
+         #{# WHEN #gbLv2MultCode#        = 1 THEN t."lv2MultCode" #}#
+         #{# WHEN #gbLv1MultCode#        = 1 THEN t."lv1MultCode" #}#
+             WHEN 1                      = 1 THEN 'ALL' END =
+       CASE
+         #{# WHEN #gbLv5MultCode#        = 1 THEN d."lv5MultCode" #}#
+         #{# WHEN #gbLv4MultCode#        = 1 THEN d."lv4MultCode" #}#
+         #{# WHEN #gbLv3MultCode#        = 1 THEN d."lv3MultCode" #}#
+         #{# WHEN #gbLv2MultCode#        = 1 THEN d."lv2MultCode" #}#
+         #{# WHEN #gbLv1MultCode#        = 1 THEN d."lv1MultCode" #}#
+             WHEN 1                      = 1 THEN 'ALL' END
+   AND t."periodId" = d."periodId"
+  LEFT JOIN (
+select t.period_id as "periodId"
+      ,count(distinct
+       case
+         when t.person_type_code_name = '华为' then
+           t.latest_employee_key
+       end) as c_101013138,
+       count(distinct
+       case
+         when t.person_type_code_name = '业务外包' then
+           t.latest_employee_key
+       end) as c_101013140,
+       count(distinct
+       case
+         when t.person_type_code_name = 'OD' then
+           t.latest_employee_key
+       end) as c_101013139
+  from devsecops.hr_person_detail_t t
+ inner join devsecops.dim_department_d p
+    on t.dept_key = p.dept_key
+   and t.tenant_id = p.tenant_id
+   and p.scd_active_ind = 1
+   and p.status_flag = '1'
+   and p.del_flag = 'N'
+ inner join devsecops.dim_multidimension_d m 
+    on t.mult_key = m.mult_key
+   and t.tenant_id = m.tenant_id
+   and m.scd_active_ind = 1
+   and m.del_flag = 'N'
+   and coalesce(m.mult_status,'live') in ('pre-registered','pre-released','live','stable','other', 'sunset')
+   and coalesce(m.lv4_mult_status,'live') in ('pre-registered','pre-released','live','stable','other', 'sunset')
+ where t.employee_key > 0
+   --and t.period_id = '202212'
+   and t.mult_valid_number <= '1'
+   and t.person_type_code_name in ('华为','业务外包','OD')
+   #{# and t.period_id >= '#yearIn#'||case when '#monthStart#' is null then '01'  else '#monthStart#' end #}#
+   #{# and t.period_id <= '#yearIn#'||case when '#monthEnd#' is null then '12'  else '#monthEnd#' end #}#
+   
+   #{# and t.period_id = '#periodId#' #}#
+   #{# and t.period_id >= '#periodYear#'||'01' #}#
+   #{# and t.period_id <= case when to_char(now(),'yyyy') = '#periodYear#' then to_char(now(),'yyyymm') else '#periodYear#'||'12' end #}#
+       and (1 = 1 #{# and t.period_id = case when to_char(now(),'yyyy') = '#periodYear#' then to_char(now(),'yyyymm') else '#periodYear#'||'12' end #}# 
+	   #{# or '#trendType#' = 'Y' #}#
+	   #{# or '#yearIn#' = '#yearIn#' #}#)
+   AND CASE 
+         #{# WHEN 'Y' = '#label#' THEN 1 #}# --标签，由于此段代码会影响性能，加一个标签参数，用来控制只有需要展示在职人数时，参数label传Y时，此段代码才生效       
+             WHEN 1 = 1 THEN 0
+       END = 1
+       
+   #{# AND m.mult_type_code = '#productTypeCode#' #}#         --多维类型编码
+
+   #{# AND m.lv1_mult_code IN ('#[#lv1MultCode#]#') #}#           --lv1_多维CODE
+   #{# AND m.lv1_mult_cn_name IN ('#[#lv1MultCnName#]#') #}#      --lv1_多维中文名称
+
+   #{# AND m.lv2_mult_code IN ('#[#lv2MultCode#]#') #}#           --lv2_多维CODE
+   #{# AND m.lv2_mult_cn_name IN ('#[#lv2MultCnName#]#') #}#      --lv2_多维中文名称
+
+   #{# AND m.lv3_mult_code IN ('#[#lv3MultCode#]#') #}#           --lv3_多维CODE
+   #{# AND m.lv3_mult_cn_name IN ('#[#lv3MultCnName#]#') #}#      --lv3_多维中文名称
+
+   #{# AND m.lv4_mult_code IN ('#[#lv4MultCode#]#') #}#           --lv4_多维CODE
+   #{# AND m.lv4_mult_cn_name IN ('#[#lv4MultCnName#]#') #}#      --lv4_多维中文名称
+
+   #{# AND m.lv5_mult_code IN ('#[#lv5MultCode#]#') #}#           --lv5_多维CODE
+   #{# AND m.lv5_mult_cn_name IN ('#[#lv5MultCnName#]#') #}#      --lv5_多维中文名称
+ group by t.period_id
+  ) d1
+    ON t."periodId" = d1."periodId"
+       ) t
+ WHERE 1 = 1
+   #{# AND #gbLv3MultCnName# = 2 #}#
+   #{# AND #gbLv4MultCnName# = 2 #}#
+   #{# AND #gbLv5MultCnName# = 2 #}#
+       AND CASE 
+         #{# WHEN '#gbOrderByName#'  = 'budgetTotalAmount' THEN t."budgetTotalAmount" #}#
+             WHEN 1 = 1 THEN 1
+         END > 0
+   
+ORDER BY        CASE #{# WHEN '#gbOrderByName#'  = 'budgetTotalAmount' THEN t."budgetTotalAmount"
+                         WHEN '#gbOrderByName#'  = 'budgetEmpAmount' THEN t."budgetEmpAmount"
+                         WHEN '#gbOrderByName#'  = 'budgetOthAmount' THEN t."budgetOthAmount"
+                         WHEN '#gbOrderByName#'  = 'budgetOdAmount' THEN t."budgetOdAmount"
+                         
+                         WHEN '#gbOrderByName#'  = 'availableTotalAmount' THEN t."availableTotalAmount"
+                         WHEN '#gbOrderByName#'  = 'availableEmpAmount' THEN t."availableEmpAmount"
+                         WHEN '#gbOrderByName#'  = 'availableOthAmount' THEN t."availableOthAmount"
+                         WHEN '#gbOrderByName#'  = 'availableOdAmount' THEN t."availableOdAmount"
+                         
+                         WHEN '#gbOrderByName#'  = 'accExecuteTotalAmount' THEN t."accExecuteTotalAmount"
+                         WHEN '#gbOrderByName#'  = 'accExecuteEmpAmount' THEN t."accExecuteEmpAmount"
+                         WHEN '#gbOrderByName#'  = 'accExecuteOthAmount' THEN t."accExecuteOthAmount"
+                         WHEN '#gbOrderByName#'  = 'accExecuteOdAmount' THEN t."accExecuteOdAmount"
+                         
+                         WHEN '#gbOrderByName#'  = 'executeTotalAmount' THEN t."executeTotalAmount"
+                         WHEN '#gbOrderByName#'  = 'executeEmpAmount' THEN t."executeEmpAmount"
+                         WHEN '#gbOrderByName#'  = 'executeOthAmount' THEN t."executeOthAmount"
+                         WHEN '#gbOrderByName#'  = 'executeOdAmount' THEN t."executeOdAmount"
+                         
+                         WHEN '#gbOrderByName#'  = 'remBudgetTotalAmount' THEN t."remBudgetTotalAmount"
+                         WHEN '#gbOrderByName#'  = 'remBudgetEmpAmount' THEN t."remBudgetEmpAmount"
+                         WHEN '#gbOrderByName#'  = 'remBudgetOthAmount' THEN t."remBudgetOthAmount"
+                         WHEN '#gbOrderByName#'  = 'remBudgetOdAmount' THEN t."remBudgetOdAmount"
+                         
+                         WHEN '#gbOrderByName#'  = 'backCalculationEmpNum' THEN t."backCalculationEmpNum"
+                         WHEN '#gbOrderByName#'  = 'backCalculationEmpEmpNum' THEN t."backCalculationEmpEmpNum"
+                         WHEN '#gbOrderByName#'  = 'backCalculationEmpOthNum' THEN t."backCalculationEmpOthNum"
+                         WHEN '#gbOrderByName#'  = 'backCalculationEmpOdNum' THEN t."backCalculationEmpOdNum"
+                         
+                         WHEN '#gbOrderByName#'  = 'personsInServiceNum' THEN t."personsInServiceNum"
+                         WHEN '#gbOrderByName#'  = 'personsInServiceEmpNum' THEN t."personsInServiceEmpNum"
+                         WHEN '#gbOrderByName#'  = 'personsInServiceOthNum' THEN t."personsInServiceOthNum"
+                         WHEN '#gbOrderByName#'  = 'personsInServiceOdNum' THEN t."personsInServiceOdNum"
+                         
+                         WHEN '#gbOrderByName#'  = 'workforceVarianceNum' THEN t."workforceVarianceNum"
+                         WHEN '#gbOrderByName#'  = 'workforceVarianceEmpNum' THEN t."workforceVarianceEmpNum"
+                         WHEN '#gbOrderByName#'  = 'workforceVarianceOthNum' THEN t."workforceVarianceOthNum"
+                         WHEN '#gbOrderByName#'  = 'workforceVarianceOdNum' THEN t."workforceVarianceOdNum"
+                         
+                         WHEN '#gbOrderByName#'  = 'budgetEmpRate' THEN t."budgetEmpRate"
+                         WHEN '#gbOrderByName#'  = 'budgetOthRate' THEN t."budgetOthRate"
+                         WHEN '#gbOrderByName#'  = 'budgetOdRate' THEN t."budgetOdRate"
+                         
+                         WHEN '#gbOrderByName#'  = 'accExecuteRate' THEN t."accExecuteRate"
+                         WHEN '#gbOrderByName#'  = 'accEmpExecuteRate' THEN t."accEmpExecuteRate"
+                         WHEN '#gbOrderByName#'  = 'accOthExecuteRate' THEN t."accOthExecuteRate"
+                         WHEN '#gbOrderByName#'  = 'accOdExecuteRate' THEN t."accOdExecuteRate"
+                         
+                         WHEN '#gbOrderByName#'  = 'budgetTotalYoyRate' THEN t."budgetTotalYoyRate"
+
+                         WHEN '#gbOrderByName#'  = 'accExecuteTotalYoyRate' THEN t."accExecuteTotalYoyRate"
+                         WHEN '#gbOrderByName#'  = 'accExecuteEmpYoyRate' THEN t."accExecuteEmpYoyRate"
+                         WHEN '#gbOrderByName#'  = 'accExecuteOthYoyRate' THEN t."accExecuteOthYoyRate"
+                         WHEN '#gbOrderByName#'  = 'accExecuteOdYoyRate' THEN t."accExecuteOdYoyRate" #}#
+                         WHEN 1 = 1 THEN 1
+                END DESC NULLS LAST
+           #{# ,CASE WHEN #gbLv1MultCnName#  = 1 THEN t."lv1MultCnName"  END #}#
+           #{# ,CASE WHEN #gbCategory#       = 1 THEN t."category"       END #}#
+           #{# ,CASE WHEN #gbLv2MultCnName#  = 1 THEN t."lv2MultCnName"  END #}#
+           #{# ,CASE WHEN #gbLv3MultCnName#  = 1 THEN t."lv3MultCnName"  END #}#
+           #{# ,CASE WHEN #gbLv4MultCnName#  = 1 THEN t."lv4MultCnName"  END #}#
+           #{# ,CASE WHEN #gbLv5MultCnName#  = 1 THEN t."lv5MultCnName"  END #}#
+           #{# ,CASE WHEN #gbProjectCode#    = 1 THEN t."projectCode"    END #}#
+           #{# ,CASE WHEN #gbProjectName#    = 1 THEN t."projectName"    END #}#
+           #{# ,CASE WHEN #gbDomain#         = 1 THEN t."domain"         END #}#
+           #{# ,CASE WHEN #gbCollectionUnit# = 1 THEN t."collectionUnit" END #}#
